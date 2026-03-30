@@ -1,0 +1,459 @@
+body{
+margin:0;
+font-family:Inter, system-ui;
+background:linear-gradient(180deg,#ecfeff,#f8fafc);
+color:#0f172a;
+}
+
+
+/* NAVBAR */
+
+.navbar{
+position:fixed;
+top:30px;
+left:50%;
+transform:translateX(-50%);
+display:flex;
+gap:40px;
+align-items:center;
+background:white;
+padding:14px 28px;
+border-radius:40px;
+box-shadow:0 10px 40px rgba(0,0,0,0.08);
+backdrop-filter:blur(10px);
+z-index:1000;
+}
+
+.logo{
+font-weight:600;
+color:#14b8a6;
+}
+
+.menu{
+display:flex;
+gap:28px;
+}
+
+.menu a{
+text-decoration:none;
+color:#475569;
+transition:.25s;
+}
+
+.menu a:hover{
+color:#14b8a6;
+}
+
+
+/* PAGE WRAPPER (IMPORTANTE PARA NAVBAR FIXED) */
+
+.page{
+min-height:100vh;
+padding-top:160px;
+position:relative;
+}
+
+
+/* HERO */
+
+.hero{
+min-height:100vh;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+text-align:center;
+padding:120px 20px 40px 20px;
+}
+
+.hero h1{
+font-size:72px;
+max-width:900px;
+line-height:1.05;
+}
+
+.hero p{
+margin-top:24px;
+font-size:20px;
+color:#64748b;
+max-width:650px;
+}
+
+
+/* HIGHLIGHT TEXT */
+
+.highlight{
+background:linear-gradient(90deg,#14b8a6,#5eead4);
+-webkit-background-clip:text;
+color:transparent;
+}
+
+
+/* BOTONES */
+
+.buttons{
+margin-top:40px;
+display:flex;
+gap:20px;
+}
+
+.btn-primary{
+background:linear-gradient(135deg,#14b8a6,#5eead4);
+border:none;
+padding:16px 40px;
+border-radius:40px;
+font-size:18px;
+color:white;
+cursor:pointer;
+box-shadow:0 15px 40px rgba(20,184,166,0.35);
+transition:.3s;
+}
+
+.btn-primary:hover{
+transform:translateY(-3px);
+box-shadow:0 20px 60px rgba(20,184,166,0.45);
+}
+
+.btn-secondary{
+background:white;
+border:1px solid #d1fae5;
+padding:16px 40px;
+border-radius:40px;
+font-size:18px;
+cursor:pointer;
+transition:.3s;
+}
+
+.btn-secondary:hover{
+border-color:#14b8a6;
+color:#0f766e;
+}
+
+
+/* GRID DE CARDS */
+
+.cards{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+gap:35px;
+margin-top:60px;
+max-width:1100px;
+margin-left:auto;
+margin-right:auto;
+padding:0 40px;
+}
+
+
+/* CARD GENERICA (HOME) */
+
+.card{
+background:white;
+padding:40px;
+border-radius:20px;
+box-shadow:0 20px 60px rgba(0,0,0,0.06);
+transition:.35s;
+}
+
+.card:hover{
+transform:translateY(-8px);
+box-shadow:0 30px 70px rgba(0,0,0,0.12);
+}
+
+.card h3{
+margin-bottom:10px;
+}
+
+.card p{
+color:#64748b;
+}
+
+
+/* CARD OPORTUNIDADES */
+
+.opportunity-card{
+
+background:white;
+padding:30px;
+border-radius:20px;
+
+border:1px solid #f1f5f9;
+
+box-shadow:
+0 10px 30px rgba(0,0,0,0.05),
+0 1px 3px rgba(0,0,0,0.03);
+
+transition:all .35s ease;
+
+display:flex;
+flex-direction:column;
+gap:10px;
+}
+
+.opportunity-card:hover{
+transform:translateY(-6px);
+box-shadow:0 20px 60px rgba(0,0,0,0.12);
+}
+
+.opportunity-card h3{
+font-size:20px;
+font-weight:600;
+line-height:1.3;
+}
+
+
+/* ORGANIZATION */
+
+.organization{
+color:#475569;
+font-size:14px;
+}
+
+
+/* TAG */
+
+.tag{
+display:inline-block;
+background:#ccfbf1;
+color:#0f766e;
+padding:6px 14px;
+border-radius:20px;
+font-size:13px;
+font-weight:500;
+width:fit-content;
+margin-top:4px;
+}
+
+
+/* INFO */
+
+.info{
+color:#64748b;
+font-size:14px;
+}
+
+
+/* DEADLINE */
+
+.deadline{
+margin-top:10px;
+font-weight:500;
+}
+
+
+/* APPLY BUTTON */
+
+.apply-btn{
+
+margin-top:18px;
+
+background:linear-gradient(135deg,#14b8a6,#5eead4);
+
+border:none;
+
+padding:12px 22px;
+
+border-radius:30px;
+
+color:white;
+
+font-weight:500;
+
+cursor:pointer;
+
+width:fit-content;
+
+transition:.3s;
+}
+
+.apply-btn:hover{
+
+transform:translateY(-2px);
+
+box-shadow:0 10px 25px rgba(20,184,166,0.4);
+
+}
+
+
+/* HEADER PAGE */
+
+.page-header{
+
+text-align:center;
+
+max-width:800px;
+
+margin:0 auto 80px auto;
+
+}
+
+.page-header h1{
+
+font-size:48px;
+
+font-weight:700;
+
+line-height:1.2;
+
+}
+
+.page-header p{
+
+margin-top:14px;
+
+color:#64748b;
+
+font-size:18px;
+
+}
+
+
+/* DECORATIVE BLOBS */
+
+.blob1{
+position:absolute;
+width:400px;
+height:400px;
+background:#5eead4;
+filter:blur(160px);
+top:120px;
+left:-100px;
+opacity:.4;
+}
+
+.blob2{
+position:absolute;
+width:350px;
+height:350px;
+background:#14b8a6;
+filter:blur(160px);
+bottom:80px;
+right:-80px;
+opacity:.35;
+}
+
+/* DISCOVER PAGE */
+
+.discover-wrapper{
+
+max-width:900px;
+
+margin:auto;
+
+text-align:center;
+
+}
+
+
+/* HEADER */
+
+.discover-header h1{
+
+font-size:48px;
+
+font-weight:700;
+
+}
+
+.discover-header p{
+
+margin-top:12px;
+
+color:#64748b;
+
+font-size:18px;
+
+}
+
+
+/* CARD */
+
+.discover-card{
+
+margin-top:50px;
+
+background:white;
+
+padding:50px;
+
+border-radius:24px;
+
+box-shadow:
+0 20px 60px rgba(0,0,0,0.06);
+
+display:flex;
+
+flex-direction:column;
+
+gap:22px;
+
+}
+
+
+/* FORM */
+
+.form-group{
+
+display:flex;
+
+flex-direction:column;
+
+text-align:left;
+
+gap:6px;
+
+}
+
+.form-group label{
+
+font-weight:500;
+
+}
+
+.form-group select{
+
+padding:12px;
+
+border-radius:10px;
+
+border:1px solid #e2e8f0;
+
+font-size:15px;
+
+}
+
+
+/* BOTON */
+
+.discover-btn{
+
+margin-top:20px;
+
+align-self:center;
+
+background:linear-gradient(135deg,#14b8a6,#5eead4);
+
+border:none;
+
+padding:16px 40px;
+
+border-radius:40px;
+
+color:white;
+
+font-size:18px;
+
+cursor:pointer;
+
+box-shadow:0 15px 40px rgba(20,184,166,0.35);
+
+transition:.3s;
+
+}
+
+.discover-btn:hover{
+
+transform:translateY(-3px);
+
+box-shadow:0 20px 60px rgba(20,184,166,0.45);
+
+}
