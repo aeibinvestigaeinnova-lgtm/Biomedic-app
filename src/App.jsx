@@ -6,6 +6,7 @@ import Home from "./pages/Home"
 import Opportunities from "./pages/Opportunities"
 import OpportunityDetail from "./pages/OpportunityDetail"
 import Talleres from "./pages/Talleres"
+import Trabajo from "./pages/Trabajo"  // ← IMPORTACIÓN AGREGADA
 
 function App(){
 
@@ -24,6 +25,8 @@ return(
 <Route path="/opportunity/:id" element={<OpportunityDetail />} />
 
 <Route path="/talleres" element={<Talleres />} />
+
+<Route path="/trabajo" element={<Trabajo />} />  {/* ← RUTA AGREGADA */}
 
 </Routes>
 

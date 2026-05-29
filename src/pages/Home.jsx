@@ -71,6 +71,15 @@ export default function Home(){
               Encontrar oportunidades para mí
             </button>
           </Link>
+          {/* BOTÓN DE TRABAJO */}
+          <Link to="/trabajo">
+            <button className="btn-primary" style={{
+              backgroundColor: "#10b981",
+              marginLeft: "16px"
+            }}>
+              💼 Ofertas de trabajo
+            </button>
+          </Link>
         </div>
       </div>
 
@@ -161,7 +170,7 @@ export default function Home(){
         </div>
       )}
 
-      {/* CARDS */}
+      {/* CARDS - Aquí están las tres cards incluyendo TRABAJO */}
       <div className="cards">
         <Link to="/opportunities" style={{textDecoration:"none"}}>
           <div className="card">
@@ -177,6 +186,16 @@ export default function Home(){
             <h3>📄 Talleres</h3>
             <p>
 Descubre talleres, workshops y cursos para potenciar tus habilidades en ingeniería biomédica.
+            </p>
+          </div>
+        </Link>
+
+        {/* CARD DE TRABAJO */}
+        <Link to="/trabajo" style={{textDecoration:"none"}}>
+          <div className="card">
+            <h3>💼 Ofertas de trabajo</h3>
+            <p>
+              Encuentra pasantías, prácticas y empleos en el campo de la ingeniería biomédica.
             </p>
           </div>
         </Link>
@@ -292,6 +311,49 @@ Descubre talleres, workshops y cursos para potenciar tus habilidades en ingenier
                 +51 999 999 999
               </a>
             </div>
+          </div>
+
+          {/* Enlaces rápidos */}
+          <div>
+            <h3 style={{
+              fontSize: "1.2rem",
+              marginBottom: "16px",
+              color: "#f3f4f6"
+            }}>
+              Enlaces rápidos
+            </h3>
+            <Link to="/trabajo" style={{
+              color: "#9ca3af",
+              textDecoration: "none",
+              display: "block",
+              marginBottom: "12px",
+              transition: "color 0.2s"
+            }}
+            onMouseEnter={(e) => e.target.style.color = "#10b981"}
+            onMouseLeave={(e) => e.target.style.color = "#9ca3af"}>
+              💼 Ofertas de trabajo
+            </Link>
+            <Link to="/opportunities" style={{
+              color: "#9ca3af",
+              textDecoration: "none",
+              display: "block",
+              marginBottom: "12px",
+              transition: "color 0.2s"
+            }}
+            onMouseEnter={(e) => e.target.style.color = "#10b981"}
+            onMouseLeave={(e) => e.target.style.color = "#9ca3af"}>
+              📅 Próximos eventos
+            </Link>
+            <Link to="/talleres" style={{
+              color: "#9ca3af",
+              textDecoration: "none",
+              display: "block",
+              transition: "color 0.2s"
+            }}
+            onMouseEnter={(e) => e.target.style.color = "#10b981"}
+            onMouseLeave={(e) => e.target.style.color = "#9ca3af"}>
+              📚 Talleres y cursos
+            </Link>
           </div>
         </div>
 
