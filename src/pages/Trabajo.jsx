@@ -1,141 +1,110 @@
 import "../styles.css"
+import { Link } from "react-router-dom"
 import { useEffect, useState } from "react"
 
-export default function Trabajo() {
-  const [data, setData] = useState([])
-  const [results, setResults] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [lastUpdated, setLastUpdated] = useState(null)
-  const [headersDetected, setHeadersDetected] = useState([])
+export default function Home() {
+  const [urgentOpportunities, setUrgentOpportunities] = useState([])
+  const [workOpportunities, setWorkOpportunities] = useState([])
+  const [loadingWork, setLoadingWork] = useState(true)
 
-  // Estados para filtros
-  const [tipoTrabajo, setTipoTrabajo] = useState("")
-  const [area, setArea] = useState("")
-  const [experiencia, setExperiencia] = useState("")
-  const [filterMode, setFilterMode] = useState("manual")
-  const [userInterest, setUserInterest] = useState("")
-
-  // ⚠️ REEMPLAZA CON TU URL DE PUBLICACIÓN (termina en /pub?output=csv)
-  const CSV_URL =
-    "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3scf0-WNhluCiUtpjPHF5tLL4JPDzfUD49mhatqRwhkDqqBKX0nSaulyLQcpLRO21itg1ISDtW8pe/pub?output=csv"
-
-  // Parser CSV robusto
-  const parseCSV = (csvText) => {
-    if (csvText.charCodeAt(0) === 0xfeff) {
-      csvText = csvText.slice(1)
-    }
-    csvText = csvText.replace(/\r\n/g, "\n").replace(/\r/g, "\n")
-    const lines = csvText.split("\n")
-    if (lines.length === 0) return []
-
-    const firstLine = lines[0]
-    let separator = ","
-    if (firstLine.includes(";") && !firstLine.includes(",")) {
-      separator = ";"
-    } else if (firstLine.includes(";") && firstLine.includes(",")) {
-      const countComma = (firstLine.match(/,/g) || []).length
-      const countSemicolon = (firstLine.match(/;/g) || []).length
-      separator = countSemicolon > countComma ? ";" : ","
-    }
-
-    const splitLine = (line) => {
-      const values = []
-      let current = ""
-      let insideQuotes = false
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i]
-        if (char === '"') {
-          insideQuotes = !insideQuotes
-        } else if (char === separator && !insideQuotes) {
-          values.push(current.trim())
-          current = ""
-        } else {
-          current += char
-        }
+  // Cargar oportunidades urgentes (congresos, becas, etc.)
+  useEffect(() => {
+    const parseDate = (dateStr) => {
+      if (!dateStr) return null
+      const parts = dateStr.split("/")
+      if (parts.length === 3) {
+        return new Date(parts[2], parts[1] - 1, parts[0])
       }
-      values.push(current.trim())
-      return values.map(v => v.replace(/^"|"$/g, "").trim())
+      return null
     }
 
-    const rawHeaders = splitLine(lines[0])
-    const headers = rawHeaders.map(h => h.replace(/\s+/g, " ").trim())
-    console.log("🔍 Encabezados detectados:", headers)
-    setHeadersDetected(headers)
-
-    const expectedColumns = [
-      "Nombre del trabajo",
-      "Empresa",
-      "Requisitos",
-      "Funciones",
-      "Tipo de Trabajo",
-      "Experiencia Requerida",
-      "Área",
-      "Fecha de Publicación",
-      "Link",
-      "¿Aún reclutando?"
-    ]
-
-    const headerMatch = expectedColumns.every(col =>
-      headers.some(h => h.toLowerCase() === col.toLowerCase())
+    fetch(
+      "https://opensheet.elk.sh/1-y5_r3rU3tai_X0C2Fs7xmOibqmJl3O2nKem3hPsQsc/Hoja%201"
     )
-    if (!headerMatch) {
-      console.warn("⚠️ Los encabezados no coinciden exactamente con los esperados.")
-      console.warn("Esperados:", expectedColumns)
-      console.warn("Detectados:", headers)
-    }
+      .then((res) => res.json())
+      .then((data) => {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
 
-    const result = []
-    let i = 1
-    while (i < lines.length) {
-      const line = lines[i]
-      if (line.trim() === "") { i++; continue }
-      let fullLine = line
-      let nextLine = lines[i + 1]
-      let values = splitLine(fullLine)
-      while (values.length < headers.length && nextLine !== undefined) {
-        fullLine += "\n" + nextLine
-        values = splitLine(fullLine)
-        i++
-        nextLine = lines[i + 1]
-      }
-      while (values.length < headers.length) {
-        values.push("")
-      }
-      const row = {}
-      headers.forEach((header, idx) => {
-        let key = header
-        const matchedCol = expectedColumns.find(
-          col => col.toLowerCase() === header.toLowerCase()
-        )
-        if (matchedCol) {
-          key = matchedCol
-        }
-        row[key] = values[idx] || ""
+        const activeOpportunities = data.filter((item) => {
+          const deadlineDate = parseDate(item["Fecha límite de inscripciones"])
+          if (!deadlineDate) return false
+          return deadlineDate >= today
+        })
+
+        const sorted = activeOpportunities.sort((a, b) => {
+          const dateA = parseDate(a["Fecha límite de inscripciones"])
+          const dateB = parseDate(b["Fecha límite de inscripciones"])
+          return dateA - dateB
+        })
+
+        const top5 = sorted.slice(0, 5)
+        setUrgentOpportunities(top5)
       })
-      result.push(row)
-      i++
-    }
-    return result
-  }
+      .catch((error) => {
+        console.error("Error cargando oportunidades:", error)
+      })
+  }, [])
 
-  const fetchData = async () => {
-    setRefreshing(true)
-    try {
-      const urlWithCache = `${CSV_URL}&_=${Date.now()}`
-      const response = await fetch(urlWithCache)
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
-      const csvText = await response.text()
-      console.log("📄 CSV recibido (primeros 300 chars):", csvText.substring(0, 300))
-      const parsed = parseCSV(csvText)
-      console.log("📊 Datos parseados (primeros 2 registros):", parsed.slice(0, 2))
-      setData(parsed)
-      setResults(parsed)
-      setLastUpdated(new Date())
-      setLoading(false)
-    } catch (error) {
-      console.error("❌ Error cargando datos:", error)
-      if (data.length === 0) {
+  // Cargar ofertas de trabajo (usando la misma URL que en Trabajo.js)
+  useEffect(() => {
+    const fetchWorkData = async () => {
+      try {
+        const csvUrl =
+          "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3scf0-WNhluCiUtpjPHF5tLL4JPDzfUD49mhatqRwhkDqqBKX0nSaulyLQcpLRO21itg1ISDtW8pe/pub?output=csv&_=" +
+          Date.now()
+
+        const response = await fetch(csvUrl)
+        if (!response.ok) throw new Error("Error al cargar los datos")
+
+        const csvText = await response.text()
+
+        // Parsear CSV
+        const lines = csvText.split("\n").filter((line) => line.trim() !== "")
+        if (lines.length === 0) {
+          setLoadingWork(false)
+          return
+        }
+
+        const headers = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""))
+
+        const parsedData = []
+        for (let i = 1; i < lines.length; i++) {
+          const values = []
+          let inQuotes = false
+          let currentValue = ""
+
+          for (let j = 0; j < lines[i].length; j++) {
+            const char = lines[i][j]
+            if (char === '"') {
+              inQuotes = !inQuotes
+            } else if (char === "," && !inQuotes) {
+              values.push(currentValue.trim())
+              currentValue = ""
+            } else {
+              currentValue += char
+            }
+          }
+          values.push(currentValue.trim())
+
+          const cleanValues = values.map((v) => v.replace(/^"|"$/g, ""))
+
+          const row = {}
+          headers.forEach((header, idx) => {
+            row[header] = cleanValues[idx] || ""
+          })
+
+          parsedData.push(row)
+        }
+
+        // Tomar las primeras 3 ofertas
+        const top3 = parsedData.slice(0, 3)
+        setWorkOpportunities(top3)
+        setLoadingWork(false)
+      } catch (error) {
+        console.error("Error cargando ofertas de trabajo:", error)
+        setLoadingWork(false)
+        // Datos de ejemplo en caso de error
         const ejemploData = [
           {
             "Nombre del trabajo": "Ingeniero Biomédico Senior",
@@ -145,264 +114,576 @@ export default function Trabajo() {
             "Tipo de Trabajo": "Tiempo completo",
             "Experiencia Requerida": "5+ años",
             Área: "Instrumentación médica",
-            "Fecha de Publicación": "2026-06-01",
-            Link: "https://medtronic.com/careers",
-            "¿Aún reclutando?": "Sí"
+            Link: "https://www.medtronic.com/careers",
           },
-          // ... más ejemplos
+          {
+            "Nombre del trabajo": "Practicante de Imágenes Médicas",
+            Empresa: "Siemens Healthineers",
+            Requisitos: "Estudiante de últimos ciclos",
+            Funciones: "Apoyo en procesamiento de imágenes",
+            "Tipo de Trabajo": "Pasantía",
+            "Experiencia Requerida": "Sin experiencia",
+            Área: "Imágenes y señales",
+            Link: "https://www.siemens-healthineers.com/careers",
+          },
+          {
+            "Nombre del trabajo": "Especialista en Biomateriales",
+            Empresa: "Johnson & Johnson",
+            Requisitos: "Maestría en Biomateriales",
+            Funciones: "Investigación y desarrollo",
+            "Tipo de Trabajo": "Tiempo completo",
+            "Experiencia Requerida": "2+ años",
+            Área: "Biomateriales y/o tejidos",
+            Link: "https://www.jnj.com/careers",
+          },
         ]
-        setData(ejemploData)
-        setResults(ejemploData)
-        setLastUpdated(new Date())
+        setWorkOpportunities(ejemploData)
       }
-      setLoading(false)
-    } finally {
-      setRefreshing(false)
     }
-  }
 
-  useEffect(() => {
-    fetchData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchWorkData()
   }, [])
 
-  // Filtros (sin cambios)
-  const applyManualFilter = () => {
-    const filtered = data.filter(
-      (item) =>
-        (tipoTrabajo === "" || item["Tipo de Trabajo"] === tipoTrabajo) &&
-        (area === "" || item["Área"] === area) &&
-        (experiencia === "" || item["Experiencia Requerida"] === experiencia)
-    )
-    setResults(filtered)
-  }
-
-  const applyRecommendationFilter = () => {
-    if (!userInterest.trim()) {
-      setResults(data)
-      return
-    }
-    const searchTerm = userInterest.toLowerCase()
-    const filtered = data.filter((item) => {
-      const allText = Object.values(item).join(" ").toLowerCase()
-      return allText.includes(searchTerm)
-    })
-    setResults(filtered)
-  }
-
-  const handleFilter = () => {
-    if (filterMode === "manual") {
-      applyManualFilter()
+  // Función para manejar la postulación
+  const handleApply = (trabajo) => {
+    const link = trabajo["Link"] || trabajo["link"] || trabajo["URL"]
+    if (link && link.trim() !== "") {
+      // Abrir el link en una nueva pestaña
+      window.open(link, "_blank", "noopener,noreferrer")
     } else {
-      applyRecommendationFilter()
+      // Si no hay link, mostrar el mensaje
+      alert(
+        `📧 Postular a: ${trabajo["Nombre del trabajo"]}\n🏢 Empresa: ${trabajo["Empresa"]}\n\nPronto recibirás instrucciones para continuar con el proceso.`
+      )
     }
-  }
-
-  const resetFilters = () => {
-    setTipoTrabajo("")
-    setArea("")
-    setExperiencia("")
-    setUserInterest("")
-    setResults(data)
-  }
-
-  if (loading) {
-    return (
-      <div className="page">
-        <div className="blob1"></div>
-        <div className="blob2"></div>
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px", fontSize: "1.2rem", color: "#4f46e5" }}>
-          Cargando ofertas de trabajo...
-        </div>
-      </div>
-    )
   }
 
   return (
-    <div className="page">
+    <div>
       <div className="blob1"></div>
       <div className="blob2"></div>
 
-      <div className="opportunities-container">
-        <div className="page-header">
-          <h1>
-            Ofertas de
-            <span className="highlight"> Trabajo</span>
-          </h1>
-          <p>Encuentra las mejores oportunidades laborales, pasantías y prácticas profesionales en ingeniería biomédica</p>
+      {/* HERO */}
+      <div className="hero">
+        <h1>
+          Descubre el futuro de la
+          <span className="highlight"> ingeniería biomédica</span>
+        </h1>
+        <p>
+          Encuentra congresos, becas, pasantías y cursos diseñados
+          para estudiantes de ingeniería biomédica en todo el mundo.
+        </p>
+        <div className="buttons">
+          <Link to="/opportunities">
+            <button className="btn-primary">Explorar oportunidades</button>
+          </Link>
+          <Link to="/opportunities">
+            <button className="btn-secondary">
+              Encontrar oportunidades para mí
+            </button>
+          </Link>
+          <Link to="/trabajo">
+            <button
+              className="btn-primary"
+              style={{
+                backgroundColor: "#10b981",
+                marginLeft: "16px",
+              }}
+            >
+              💼 Ofertas de trabajo
+            </button>
+          </Link>
+        </div>
+      </div>
 
-          {headersDetected.length > 0 && (
-            <div style={{ fontSize: "0.8rem", color: "#6b7280", marginTop: "8px", backgroundColor: "#f3f4f6", padding: "8px 16px", borderRadius: "8px" }}>
-              📋 Encabezados detectados: {headersDetected.join(" • ")}
-            </div>
-          )}
-
-          {lastUpdated && (
-            <p style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: "8px" }}>
-              📅 Última actualización: {lastUpdated.toLocaleString()}
-            </p>
-          )}
-          <button
-            onClick={fetchData}
-            disabled={refreshing}
+      {/* SECCIÓN DE OPORTUNIDADES URGENTES */}
+      {urgentOpportunities.length > 0 && (
+        <div
+          style={{
+            maxWidth: "1200px",
+            margin: "0 auto",
+            padding: "40px 20px",
+          }}
+        >
+          <div
             style={{
-              marginTop: "12px",
-              padding: "8px 20px",
-              background: refreshing ? "#9ca3af" : "#4f46e5",
-              color: "white",
-              border: "none",
-              borderRadius: "40px",
-              fontWeight: "500",
-              cursor: refreshing ? "not-allowed" : "pointer",
-              fontSize: "14px",
+              textAlign: "center",
+              marginBottom: "32px",
             }}
           >
-            {refreshing ? "🔄 Actualizando..." : "🔄 Refrescar ofertas"}
-          </button>
+            <h2
+              style={{
+                fontSize: "2rem",
+                color: "#1f2937",
+                marginBottom: "8px",
+              }}
+            >
+              ⏰ ¡No te lo pierdas!
+            </h2>
+            <p
+              style={{
+                color: "#6b7280",
+                fontSize: "1.1rem",
+              }}
+            >
+              Estas oportunidades están por vencer - ¡Aplica ahora!
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              gap: "24px",
+            }}
+          >
+            {urgentOpportunities.map((opp, index) => (
+              <div
+                key={index}
+                className="opportunity-card"
+                style={{
+                  border: "2px solid #f59e0b",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "10px",
+                    right: "10px",
+                    backgroundColor: "#f59e0b",
+                    color: "white",
+                    padding: "4px 12px",
+                    borderRadius: "20px",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  🔥 ¡Últimos días!
+                </div>
+                <h3>{opp["Nombre de la oportunidad"]}</h3>
+                <div className="tag">{opp["Tipo de evento"]}</div>
+                <div className="organization">{opp["Organización"]}</div>
+                <div className="info">📍 {opp["País"]}</div>
+                <div className="info">💻 {opp["Modalidad"]}</div>
+                <div
+                  className="deadline"
+                  style={{
+                    color: "#f59e0b",
+                    fontWeight: "bold",
+                  }}
+                >
+                  ⏰ Cierra: {opp["Fecha límite de inscripciones"]}
+                </div>
+                <a href={opp["Link"]} target="_blank" rel="noopener noreferrer">
+                  <button className="apply-btn">Aplicar ahora</button>
+                </a>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ textAlign: "center", marginTop: "32px" }}>
+            <Link to="/opportunities">
+              <button
+                style={{
+                  padding: "12px 32px",
+                  backgroundColor: "#4f46e5",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "40px",
+                  fontSize: "1rem",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                }}
+              >
+                Ver todas las oportunidades →
+              </button>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* SECCIÓN DE OFERTAS DE TRABAJO */}
+      <div
+        style={{
+          maxWidth: "1200px",
+          margin: "0 auto",
+          padding: "40px 20px",
+        }}
+      >
+        <div
+          style={{
+            textAlign: "center",
+            marginBottom: "32px",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "2rem",
+              color: "#1f2937",
+              marginBottom: "8px",
+            }}
+          >
+            💼 Ofertas de trabajo destacadas
+          </h2>
+          <p
+            style={{
+              color: "#6b7280",
+              fontSize: "1.1rem",
+            }}
+          >
+            Encuentra las mejores oportunidades laborales en ingeniería biomédica
+          </p>
         </div>
 
-        {/* Filtros - sin cambios */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: "32px" }}>
-          <div style={{ maxWidth: "900px", width: "100%", background: "white", borderRadius: "24px", padding: "24px", boxShadow: "0 8px 20px rgba(0,0,0,0.05)" }}>
-            <div style={{ display: "flex", gap: "12px", marginBottom: "24px", borderBottom: "1px solid #e0e0e0", paddingBottom: "16px" }}>
-              <button onClick={() => setFilterMode("manual")} style={{ padding: "10px 20px", borderRadius: "40px", border: "none", background: filterMode === "manual" ? "#10b981" : "#f3f4f6", color: filterMode === "manual" ? "white" : "#374151", fontWeight: "500", cursor: "pointer" }}>
-                🔍 Filtro manual
-              </button>
-              <button onClick={() => setFilterMode("recomendacion")} style={{ padding: "10px 20px", borderRadius: "40px", border: "none", background: filterMode === "recomendacion" ? "#10b981" : "#f3f4f6", color: filterMode === "recomendacion" ? "white" : "#374151", fontWeight: "500", cursor: "pointer" }}>
-                ⭐ Recomendaciones personalizadas
-              </button>
+        {loadingWork ? (
+          <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
+            Cargando ofertas de trabajo...
+          </div>
+        ) : workOpportunities.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
+            No hay ofertas de trabajo disponibles en este momento.
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              gap: "24px",
+            }}
+          >
+            {workOpportunities.map((trabajo, index) => (
+              <div key={index} className="opportunity-card">
+                <h3>{trabajo["Nombre del trabajo"] || "Sin título"}</h3>
+                <div
+                  className="tag"
+                  style={{
+                    backgroundColor: "#10b981",
+                    color: "white",
+                  }}
+                >
+                  {trabajo["Tipo de Trabajo"] || "No especificado"}
+                </div>
+                <div className="organization">
+                  🏢 {trabajo["Empresa"] || "Empresa no especificada"}
+                </div>
+                <div className="info">
+                  📋 {trabajo["Área"] || "Área no especificada"}
+                </div>
+                <div className="info">
+                  ⭐ {trabajo["Experiencia Requerida"] || "No especificada"}
+                </div>
+                {trabajo["Requisitos"] && (
+                  <div
+                    className="deadline"
+                    style={{
+                      color: "#10b981",
+                      marginTop: "12px",
+                    }}
+                  >
+                    📌 Requisitos: {trabajo["Requisitos"].substring(0, 80)}...
+                  </div>
+                )}
+                {trabajo["Funciones"] && (
+                  <details style={{ marginTop: "12px", fontSize: "14px", color: "#4b5563" }}>
+                    <summary
+                      style={{ cursor: "pointer", fontWeight: "500", color: "#4f46e5" }}
+                    >
+                      Ver funciones
+                    </summary>
+                    <p
+                      style={{
+                        marginTop: "8px",
+                        padding: "8px",
+                        background: "#f9fafb",
+                        borderRadius: "8px",
+                      }}
+                    >
+                      {trabajo["Funciones"]}
+                    </p>
+                  </details>
+                )}
+                <button
+                  className="apply-btn"
+                  style={{
+                    backgroundColor: "#10b981",
+                    marginTop: "16px",
+                  }}
+                  onClick={() => handleApply(trabajo)}
+                >
+                  Postular ahora
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Botón para ver todas las ofertas */}
+        <div style={{ textAlign: "center", marginTop: "32px" }}>
+          <Link to="/trabajo">
+            <button
+              style={{
+                padding: "12px 32px",
+                backgroundColor: "#10b981",
+                color: "white",
+                border: "none",
+                borderRadius: "40px",
+                fontSize: "1rem",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "transform 0.2s, box-shadow 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.transform = "scale(1.05)"
+                e.target.style.boxShadow = "0 4px 20px rgba(16, 185, 129, 0.4)"
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = "scale(1)"
+                e.target.style.boxShadow = "none"
+              }}
+            >
+              Ver todas las ofertas de trabajo →
+            </button>
+          </Link>
+        </div>
+      </div>
+
+      {/* CARDS - Aquí están las tres cards incluyendo TRABAJO */}
+      <div className="cards">
+        <Link to="/opportunities" style={{ textDecoration: "none" }}>
+          <div className="card">
+            <h3>🔎 Explorar oportunidades</h3>
+            <p>Filtra congresos, becas y cursos según tu área biomédica.</p>
+          </div>
+        </Link>
+
+        <Link to="/talleres" style={{ textDecoration: "none" }}>
+          <div className="card">
+            <h3>📄 Talleres</h3>
+            <p>
+              Descubre talleres, workshops y cursos para potenciar tus
+              habilidades en ingeniería biomédica.
+            </p>
+          </div>
+        </Link>
+
+        <Link to="/trabajo" style={{ textDecoration: "none" }}>
+          <div className="card">
+            <h3>💼 Ofertas de trabajo</h3>
+            <p>
+              Encuentra pasantías, prácticas y empleos en el campo de la
+              ingeniería biomédica.
+            </p>
+          </div>
+        </Link>
+      </div>
+
+      {/* FOOTER - AEIB */}
+      <footer
+        style={{
+          backgroundColor: "#1f2937",
+          color: "white",
+          padding: "60px 20px 30px",
+          marginTop: "60px",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "1200px",
+            margin: "0 auto",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+            gap: "40px",
+            textAlign: "center",
+          }}
+        >
+          {/* Logo AEIB */}
+          <div>
+            <h2
+              style={{
+                fontSize: "2rem",
+                marginBottom: "8px",
+                background: "linear-gradient(135deg, #a855f7, #ec4899)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                display: "inline-block",
+              }}
+            >
+              AEIB
+            </h2>
+            <p
+              style={{
+                color: "#9ca3af",
+                marginTop: "8px",
+              }}
+            >
+              Asociación de Estudiantes de Ingeniería Biomédica
+            </p>
+          </div>
+
+          {/* Subdirección */}
+          <div>
+            <h3
+              style={{
+                fontSize: "1.2rem",
+                marginBottom: "16px",
+                color: "#f3f4f6",
+              }}
+            >
+              Subdirección de Investigación e Innovación
+            </h3>
+            <p
+              style={{
+                color: "#9ca3af",
+                lineHeight: "1.6",
+              }}
+            >
+              Impulsando el futuro de la ingeniería biomédica
+              <br />
+              a través de la investigación y la innovación tecnológica.
+            </p>
+          </div>
+
+          {/* Contacto */}
+          <div>
+            <h3
+              style={{
+                fontSize: "1.2rem",
+                marginBottom: "16px",
+                color: "#f3f4f6",
+              }}
+            >
+              Contáctanos
+            </h3>
+
+            {/* Instagram */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                marginBottom: "12px",
+              }}
+            >
+              <span style={{ fontSize: "1.5rem" }}>📷</span>
+              <a
+                href="https://instagram.com/aeib.pe"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: "#9ca3af",
+                  textDecoration: "none",
+                  transition: "color 0.2s",
+                }}
+                onMouseEnter={(e) => (e.target.style.color = "#e4405f")}
+                onMouseLeave={(e) => (e.target.style.color = "#9ca3af")}
+              >
+                @aeib.pe
+              </a>
             </div>
 
-            {filterMode === "manual" && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "flex-end" }}>
-                <div style={{ flex: "1", minWidth: "150px" }}>
-                  <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#374151" }}>Tipo de Trabajo</label>
-                  <select value={tipoTrabajo} onChange={(e) => setTipoTrabajo(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: "12px", border: "1px solid #d1d5db", fontSize: "14px" }}>
-                    <option value="">Todos</option>
-                    <option value="Tiempo completo">Tiempo completo</option>
-                    <option value="Medio tiempo">Medio tiempo</option>
-                    <option value="Pasantía">Pasantía</option>
-                    <option value="Freelance">Freelance</option>
-                    <option value="Práctica profesional">Práctica profesional</option>
-                  </select>
-                </div>
-                <div style={{ flex: "1", minWidth: "150px" }}>
-                  <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#374151" }}>Área biomédica</label>
-                  <select value={area} onChange={(e) => setArea(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: "12px", border: "1px solid #d1d5db", fontSize: "14px" }}>
-                    <option value="">Todas</option>
-                    <option value="Biomateriales y/o tejidos">Biomateriales</option>
-                    <option value="Imágenes y señales">Imágenes y señales</option>
-                    <option value="Instrumentación médica">Instrumentación médica</option>
-                    <option value="Biomecánica">Biomecánica</option>
-                    <option value="Ingeniería clínica">Ingeniería clínica</option>
-                    <option value="Regulación y calidad">Regulación y calidad</option>
-                  </select>
-                </div>
-                <div style={{ flex: "1", minWidth: "150px" }}>
-                  <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#374151" }}>Experiencia</label>
-                  <select value={experiencia} onChange={(e) => setExperiencia(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: "12px", border: "1px solid #d1d5db", fontSize: "14px" }}>
-                    <option value="">Todas</option>
-                    <option value="Sin experiencia">Sin experiencia</option>
-                    <option value="1+ años">1+ años</option>
-                    <option value="2+ años">2+ años</option>
-                    <option value="3+ años">3+ años</option>
-                    <option value="5+ años">5+ años</option>
-                  </select>
-                </div>
-                <button onClick={handleFilter} style={{ padding: "10px 24px", background: "#10b981", color: "white", border: "none", borderRadius: "12px", fontWeight: "600", cursor: "pointer", height: "42px" }}>
-                  Filtrar
-                </button>
-              </div>
-            )}
+            {/* Teléfono */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+              }}
+            >
+              <span style={{ fontSize: "1.5rem" }}>📞</span>
+              <a
+                href="tel:+51999999999"
+                style={{
+                  color: "#9ca3af",
+                  textDecoration: "none",
+                  transition: "color 0.2s",
+                }}
+                onMouseEnter={(e) => (e.target.style.color = "#10b981")}
+                onMouseLeave={(e) => (e.target.style.color = "#9ca3af")}
+              >
+                +51 999 999 999
+              </a>
+            </div>
+          </div>
 
-            {filterMode === "recomendacion" && (
-              <div style={{ display: "flex", gap: "16px", alignItems: "flex-end", flexWrap: "wrap" }}>
-                <div style={{ flex: "2", minWidth: "250px" }}>
-                  <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#374151" }}>¿Qué tipo de trabajo buscas?</label>
-                  <input type="text" placeholder="Ej: biomateriales, imágenes, pasantía..." value={userInterest} onChange={(e) => setUserInterest(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: "12px", border: "1px solid #d1d5db", fontSize: "14px" }} />
-                </div>
-                <button onClick={handleFilter} style={{ padding: "10px 24px", background: "#10b981", color: "white", border: "none", borderRadius: "12px", fontWeight: "600", cursor: "pointer", height: "42px" }}>
-                  Recomendar
-                </button>
-              </div>
-            )}
-
-            {(tipoTrabajo !== "" || area !== "" || experiencia !== "" || userInterest !== "") && (
-              <div style={{ marginTop: "16px", textAlign: "right" }}>
-                <button onClick={resetFilters} style={{ padding: "8px 16px", background: "transparent", border: "1px solid #d1d5db", borderRadius: "8px", color: "#6b7280", cursor: "pointer", fontSize: "13px" }}>
-                  ✖ Limpiar filtros
-                </button>
-              </div>
-            )}
+          {/* Enlaces rápidos */}
+          <div>
+            <h3
+              style={{
+                fontSize: "1.2rem",
+                marginBottom: "16px",
+                color: "#f3f4f6",
+              }}
+            >
+              Enlaces rápidos
+            </h3>
+            <Link
+              to="/trabajo"
+              style={{
+                color: "#9ca3af",
+                textDecoration: "none",
+                display: "block",
+                marginBottom: "12px",
+                transition: "color 0.2s",
+              }}
+              onMouseEnter={(e) => (e.target.style.color = "#10b981")}
+              onMouseLeave={(e) => (e.target.style.color = "#9ca3af")}
+            >
+              💼 Ofertas de trabajo
+            </Link>
+            <Link
+              to="/opportunities"
+              style={{
+                color: "#9ca3af",
+                textDecoration: "none",
+                display: "block",
+                marginBottom: "12px",
+                transition: "color 0.2s",
+              }}
+              onMouseEnter={(e) => (e.target.style.color = "#10b981")}
+              onMouseLeave={(e) => (e.target.style.color = "#9ca3af")}
+            >
+              📅 Próximos eventos
+            </Link>
+            <Link
+              to="/talleres"
+              style={{
+                color: "#9ca3af",
+                textDecoration: "none",
+                display: "block",
+                transition: "color 0.2s",
+              }}
+              onMouseEnter={(e) => (e.target.style.color = "#10b981")}
+              onMouseLeave={(e) => (e.target.style.color = "#9ca3af")}
+            >
+              📚 Talleres y cursos
+            </Link>
           </div>
         </div>
 
-        {/* Tarjetas con botón de postulación que abre el enlace */}
-        <div className="cards">
-          {results.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "60px", color: "#6b7280" }}>
-              {data.length === 0 ? "No se encontraron ofertas de trabajo. Verifica que el Google Sheet tenga datos." : "No hay ofertas que coincidan con los filtros."}
-            </div>
-          ) : (
-            results.map((trabajo, index) => {
-              // Verificar si el enlace existe y es válido
-              const link = trabajo["Link"] || ""
-              const isLinkValid = link && (link.startsWith("http://") || link.startsWith("https://"))
-              const isRecruiting = trabajo["¿Aún reclutando?"]?.toLowerCase() === "sí" || trabajo["¿Aún reclutando?"]?.toLowerCase() === "true"
-
-              return (
-                <div key={index} className="opportunity-card">
-                  <h3>{trabajo["Nombre del trabajo"] || "Sin título"}</h3>
-                  <div className="tag" style={{ backgroundColor: "#10b981", color: "white" }}>
-                    {trabajo["Tipo de Trabajo"] || "No especificado"}
-                  </div>
-                  <div className="organization">🏢 {trabajo["Empresa"] || "Empresa no especificada"}</div>
-                  <div className="info">📋 {trabajo["Área"] || "Área no especificada"}</div>
-                  <div className="info">⭐ {trabajo["Experiencia Requerida"] || "No especificada"}</div>
-                  {trabajo["Fecha de Publicación"] && (
-                    <div className="info">📅 {trabajo["Fecha de Publicación"]}</div>
-                  )}
-                  {trabajo["¿Aún reclutando?"] && (
-                    <div className="info">
-                      {isRecruiting ? "✅ Aún reclutando" : "❌ No reclutando"}
-                    </div>
-                  )}
-                  {trabajo["Requisitos"] && (
-                    <div className="deadline" style={{ color: "#10b981", marginTop: "12px" }}>
-                      📌 Requisitos: {trabajo["Requisitos"].substring(0, 100)}...
-                    </div>
-                  )}
-                  {trabajo["Funciones"] && (
-                    <details style={{ marginTop: "12px", fontSize: "14px", color: "#4b5563" }}>
-                      <summary style={{ cursor: "pointer", fontWeight: "500", color: "#4f46e5" }}>Ver funciones</summary>
-                      <p style={{ marginTop: "8px", padding: "8px", background: "#f9fafb", borderRadius: "8px" }}>{trabajo["Funciones"]}</p>
-                    </details>
-                  )}
-                  <button
-                    className="apply-btn"
-                    style={{
-                      backgroundColor: isLinkValid ? "#10b981" : "#9ca3af",
-                      marginTop: "16px",
-                      cursor: isLinkValid ? "pointer" : "not-allowed",
-                      opacity: isLinkValid ? 1 : 0.6,
-                    }}
-                    onClick={() => {
-                      if (isLinkValid) {
-                        window.open(link, "_blank", "noopener,noreferrer")
-                      } else {
-                        alert("⚠️ Esta oferta no tiene un enlace de postulación disponible.")
-                      }
-                    }}
-                    disabled={!isLinkValid}
-                  >
-                    {isLinkValid ? "📎 Postular ahora" : "🔗 Sin enlace"}
-                  </button>
-                </div>
-              )
-            })
-          )}
+        {/* Línea divisoria y derechos */}
+        <div
+          style={{
+            maxWidth: "1200px",
+            margin: "40px auto 0",
+            paddingTop: "30px",
+            borderTop: "1px solid #374151",
+            textAlign: "center",
+            color: "#6b7280",
+            fontSize: "0.9rem",
+          }}
+        >
+          <p>
+            © {new Date().getFullYear()} AEIB - Asociación de Estudiantes de
+            Ingeniería Biomédica
+            <br />
+            Subdirección de Investigación e Innovación
+          </p>
         </div>
-      </div>
+      </footer>
     </div>
   )
 }
