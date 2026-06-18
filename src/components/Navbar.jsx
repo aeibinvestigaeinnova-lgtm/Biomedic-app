@@ -57,6 +57,15 @@ export default function Navbar() {
             Oportunidades
           </Link>
           
+          <Link to="/trabajo" style={{
+            textDecoration: "none",
+            color: "#374151",
+            fontWeight: "500",
+            transition: "color 0.2s"
+          }}>
+            Trabajo
+          </Link>
+          
           <Link to="/talleres" style={{
             textDecoration: "none",
             color: "#374151",
