@@ -46,7 +46,93 @@ export default function Home() {
       })
   }, [])
 
-  // Cargar ofertas de trabajo (usando la misma URL que en Trabajo.js)
+  // 🔥 MISMO PARSER QUE EN Trabajo.js (robusto)
+  const parseCSV = (csvText) => {
+    // Eliminar BOM si existe
+    if (csvText.charCodeAt(0) === 0xfeff) {
+      csvText = csvText.slice(1)
+    }
+
+    // Normalizar saltos de línea
+    csvText = csvText.replace(/\r\n/g, "\n").replace(/\r/g, "\n")
+
+    const lines = csvText.split("\n")
+    if (lines.length === 0) return []
+
+    // Detectar separador
+    const firstLine = lines[0]
+    let separator = ","
+    if (firstLine.includes(";") && !firstLine.includes(",")) {
+      separator = ";"
+    } else if (firstLine.includes(";") && firstLine.includes(",")) {
+      const countComma = (firstLine.match(/,/g) || []).length
+      const countSemicolon = (firstLine.match(/;/g) || []).length
+      separator = countSemicolon > countComma ? ";" : ","
+    }
+
+    // Función para dividir una línea respetando comillas
+    const splitLine = (line) => {
+      const values = []
+      let current = ""
+      let insideQuotes = false
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i]
+        if (char === '"') {
+          insideQuotes = !insideQuotes
+        } else if (char === separator && !insideQuotes) {
+          values.push(current.trim())
+          current = ""
+        } else {
+          current += char
+        }
+      }
+      values.push(current.trim())
+      return values.map(v => v.replace(/^"|"$/g, "").trim())
+    }
+
+    // Procesar encabezados
+    const rawHeaders = splitLine(lines[0])
+    const headers = rawHeaders.map(h => h.replace(/\s+/g, " ").trim())
+
+    console.log("🔍 Encabezados detectados en Home:", headers)
+
+    // Parsear filas
+    const result = []
+    let i = 1
+    while (i < lines.length) {
+      const line = lines[i]
+      if (line.trim() === "") {
+        i++
+        continue
+      }
+
+      let fullLine = line
+      let nextLine = lines[i + 1]
+      let values = splitLine(fullLine)
+      while (values.length < headers.length && nextLine !== undefined) {
+        fullLine += "\n" + nextLine
+        values = splitLine(fullLine)
+        i++
+        nextLine = lines[i + 1]
+      }
+
+      while (values.length < headers.length) {
+        values.push("")
+      }
+
+      const row = {}
+      headers.forEach((header, idx) => {
+        row[header] = values[idx] || ""
+      })
+
+      result.push(row)
+      i++
+    }
+
+    return result
+  }
+
+  // Cargar ofertas de trabajo
   useEffect(() => {
     const fetchWorkData = async () => {
       try {
@@ -58,53 +144,19 @@ export default function Home() {
         if (!response.ok) throw new Error("Error al cargar los datos")
 
         const csvText = await response.text()
+        console.log("📄 CSV recibido en Home (primeros 300 chars):", csvText.substring(0, 300))
 
-        // Parsear CSV
-        const lines = csvText.split("\n").filter((line) => line.trim() !== "")
-        if (lines.length === 0) {
-          setLoadingWork(false)
-          return
-        }
-
-        const headers = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""))
-
-        const parsedData = []
-        for (let i = 1; i < lines.length; i++) {
-          const values = []
-          let inQuotes = false
-          let currentValue = ""
-
-          for (let j = 0; j < lines[i].length; j++) {
-            const char = lines[i][j]
-            if (char === '"') {
-              inQuotes = !inQuotes
-            } else if (char === "," && !inQuotes) {
-              values.push(currentValue.trim())
-              currentValue = ""
-            } else {
-              currentValue += char
-            }
-          }
-          values.push(currentValue.trim())
-
-          const cleanValues = values.map((v) => v.replace(/^"|"$/g, ""))
-
-          const row = {}
-          headers.forEach((header, idx) => {
-            row[header] = cleanValues[idx] || ""
-          })
-
-          parsedData.push(row)
-        }
+        const parsed = parseCSV(csvText)
+        console.log("📊 Datos parseados en Home (primeros 2):", parsed.slice(0, 2))
 
         // Tomar las primeras 3 ofertas
-        const top3 = parsedData.slice(0, 3)
+        const top3 = parsed.slice(0, 3)
         setWorkOpportunities(top3)
         setLoadingWork(false)
       } catch (error) {
         console.error("Error cargando ofertas de trabajo:", error)
         setLoadingWork(false)
-        // Datos de ejemplo en caso de error
+        // Datos de ejemplo con links
         const ejemploData = [
           {
             "Nombre del trabajo": "Ingeniero Biomédico Senior",
@@ -114,6 +166,7 @@ export default function Home() {
             "Tipo de Trabajo": "Tiempo completo",
             "Experiencia Requerida": "5+ años",
             Área: "Instrumentación médica",
+            Link: "https://www.medtronic.com/careers",
           },
           {
             "Nombre del trabajo": "Practicante de Imágenes Médicas",
@@ -123,6 +176,7 @@ export default function Home() {
             "Tipo de Trabajo": "Pasantía",
             "Experiencia Requerida": "Sin experiencia",
             Área: "Imágenes y señales",
+            Link: "https://www.siemens-healthineers.com/careers",
           },
           {
             "Nombre del trabajo": "Especialista en Biomateriales",
@@ -132,6 +186,7 @@ export default function Home() {
             "Tipo de Trabajo": "Tiempo completo",
             "Experiencia Requerida": "2+ años",
             Área: "Biomateriales y/o tejidos",
+            Link: "https://www.jnj.com/careers",
           },
         ]
         setWorkOpportunities(ejemploData)
@@ -140,6 +195,25 @@ export default function Home() {
 
     fetchWorkData()
   }, [])
+
+  // 🔥 FUNCIÓN PARA MANEJAR LA POSTULACIÓN
+  const handleApply = (trabajo) => {
+    console.log("🔗 Postulando a:", trabajo["Nombre del trabajo"])
+    console.log("📦 Datos completos:", trabajo)
+    
+    // Buscar el link en diferentes posibles nombres de columna
+    const link = trabajo["Link"] || trabajo["link"] || trabajo["URL"] || trabajo["Url"] || trabajo["Enlace"]
+    
+    console.log("🔗 Link encontrado:", link)
+    
+    if (link && link.trim() !== "" && link.trim() !== "#") {
+      window.open(link.trim(), "_blank", "noopener,noreferrer")
+    } else {
+      alert(
+        `📧 Postular a: ${trabajo["Nombre del trabajo"] || "Sin título"}\n🏢 Empresa: ${trabajo["Empresa"] || "No especificada"}\n\nPronto recibirás instrucciones para continuar con el proceso.`
+      )
+    }
+  }
 
   return (
     <div>
@@ -368,17 +442,32 @@ export default function Home() {
                     📌 Requisitos: {trabajo["Requisitos"].substring(0, 80)}...
                   </div>
                 )}
+                {trabajo["Funciones"] && (
+                  <details style={{ marginTop: "12px", fontSize: "14px", color: "#4b5563" }}>
+                    <summary
+                      style={{ cursor: "pointer", fontWeight: "500", color: "#4f46e5" }}
+                    >
+                      Ver funciones
+                    </summary>
+                    <p
+                      style={{
+                        marginTop: "8px",
+                        padding: "8px",
+                        background: "#f9fafb",
+                        borderRadius: "8px",
+                      }}
+                    >
+                      {trabajo["Funciones"]}
+                    </p>
+                  </details>
+                )}
                 <button
                   className="apply-btn"
                   style={{
                     backgroundColor: "#10b981",
                     marginTop: "16px",
                   }}
-                  onClick={() =>
-                    alert(
-                      `📧 Postular a: ${trabajo["Nombre del trabajo"]}\n🏢 Empresa: ${trabajo["Empresa"]}\n\nPronto recibirás instrucciones para continuar con el proceso.`
-                    )
-                  }
+                  onClick={() => handleApply(trabajo)}
                 >
                   Postular ahora
                 </button>
@@ -417,7 +506,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* CARDS - Aquí están las tres cards incluyendo TRABAJO */}
+      {/* CARDS */}
       <div className="cards">
         <Link to="/opportunities" style={{ textDecoration: "none" }}>
           <div className="card">
@@ -447,7 +536,7 @@ export default function Home() {
         </Link>
       </div>
 
-      {/* FOOTER - AEIB */}
+      {/* FOOTER */}
       <footer
         style={{
           backgroundColor: "#1f2937",
@@ -466,7 +555,6 @@ export default function Home() {
             textAlign: "center",
           }}
         >
-          {/* Logo AEIB */}
           <div>
             <h2
               style={{
@@ -490,7 +578,6 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Subdirección */}
           <div>
             <h3
               style={{
@@ -513,7 +600,6 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Contacto */}
           <div>
             <h3
               style={{
@@ -525,7 +611,6 @@ export default function Home() {
               Contáctanos
             </h3>
 
-            {/* Instagram */}
             <div
               style={{
                 display: "flex",
@@ -552,7 +637,6 @@ export default function Home() {
               </a>
             </div>
 
-            {/* Teléfono */}
             <div
               style={{
                 display: "flex",
@@ -577,7 +661,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Enlaces rápidos */}
           <div>
             <h3
               style={{
@@ -632,7 +715,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Línea divisoria y derechos */}
         <div
           style={{
             maxWidth: "1200px",
