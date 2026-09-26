@@ -5,53 +5,76 @@ export default function Opportunities() {
   const [data, setData] = useState([])
   const [results, setResults] = useState([])
 
-  // Estados para filtros
+  // Filtros
   const [tipo, setTipo] = useState("")
   const [rama, setRama] = useState("")
   const [modalidad, setModalidad] = useState("")
   const [filterMode, setFilterMode] = useState("manual")
   const [userInterest, setUserInterest] = useState("")
 
-  // Estado para controlar las tarjetas expandidas
+  // Controla qué oportunidades están expandidas
   const [expandedCards, setExpandedCards] = useState({})
 
-  // Convertir DD/MM/YYYY a Date
+  // ==========================================
+  // CONVERTIR DD/MM/YYYY A DATE
+  // ==========================================
   const parseDate = (dateStr) => {
     if (!dateStr) return null
 
-    const parts = dateStr.split("/")
+    const parts = dateStr.trim().split("/")
 
     if (parts.length === 3) {
       return new Date(
-        parts[2],
-        parts[1] - 1,
-        parts[0]
+        Number(parts[2]),
+        Number(parts[1]) - 1,
+        Number(parts[0])
       )
     }
 
     return null
   }
 
+  // ==========================================
+  // CARGAR EXCEL
+  // ==========================================
   useEffect(() => {
     fetch(
       "https://opensheet.elk.sh/1-y5_r3rU3tai_X0C2Fs7xmOibqmJl3O2nKem3hPsQsc/Hoja%201"
     )
       .then((res) => res.json())
       .then((data) => {
+        console.log("DATOS DEL EXCEL:", data)
+
+        if (data.length > 0) {
+          console.log(
+            "COLUMNAS RECIBIDAS:",
+            Object.keys(data[0])
+          )
+
+          console.log(
+            "PRIMERA OPORTUNIDAD:",
+            data[0]
+          )
+        }
+
         const today = new Date()
         today.setHours(0, 0, 0, 0)
 
-        // Se sigue utilizando la FECHA LÍMITE
-        // para decidir qué oportunidades mostrar
-        const activeOpportunities = data.filter((item) => {
-          const deadlineDate = parseDate(
-            item["Fecha límite de inscripciones"]
-          )
+        // La fecha límite sigue siendo la que determina
+        // si la oportunidad aparece.
+        const activeOpportunities = data.filter(
+          (item) => {
+            const deadlineDate = parseDate(
+              item[
+                "Fecha límite de inscripciones"
+              ]
+            )
 
-          if (!deadlineDate) return false
+            if (!deadlineDate) return false
 
-          return deadlineDate >= today
-        })
+            return deadlineDate >= today
+          }
+        )
 
         setData(activeOpportunities)
         setResults(activeOpportunities)
@@ -64,7 +87,9 @@ export default function Opportunities() {
       })
   }, [])
 
-  // Filtro manual
+  // ==========================================
+  // FILTRO MANUAL
+  // ==========================================
   const applyManualFilter = () => {
     const filtered = data.filter(
       (item) =>
@@ -79,7 +104,9 @@ export default function Opportunities() {
     setResults(filtered)
   }
 
-  // Filtro por recomendación
+  // ==========================================
+  // FILTRO RECOMENDACIÓN
+  // ==========================================
   const applyRecommendationFilter = () => {
     if (!userInterest.trim()) {
       setResults(data)
@@ -87,7 +114,7 @@ export default function Opportunities() {
     }
 
     const searchTerm =
-      userInterest.toLowerCase()
+      userInterest.toLowerCase().trim()
 
     const filtered = data.filter((item) => {
       const rama =
@@ -97,8 +124,9 @@ export default function Opportunities() {
         item["Tipo de evento"]?.toLowerCase() || ""
 
       const nombre =
-        item["Nombre de la oportunidad"]?.toLowerCase() ||
-        ""
+        item[
+          "Nombre de la oportunidad"
+        ]?.toLowerCase() || ""
 
       const organizacion =
         item["Organización"]?.toLowerCase() || ""
@@ -114,6 +142,9 @@ export default function Opportunities() {
     setResults(filtered)
   }
 
+  // ==========================================
+  // APLICAR FILTRO
+  // ==========================================
   const handleFilter = () => {
     if (filterMode === "manual") {
       applyManualFilter()
@@ -122,6 +153,9 @@ export default function Opportunities() {
     }
   }
 
+  // ==========================================
+  // REINICIAR FILTROS
+  // ==========================================
   const resetFilters = () => {
     setTipo("")
     setRama("")
@@ -131,7 +165,9 @@ export default function Opportunities() {
     setExpandedCards({})
   }
 
-  // Abrir / cerrar información extra
+  // ==========================================
+  // EXPANDIR / CERRAR
+  // ==========================================
   const toggleExpand = (index) => {
     setExpandedCards((prev) => ({
       ...prev,
@@ -146,7 +182,10 @@ export default function Opportunities() {
 
       <div className="opportunities-container">
 
+        {/* ================================= */}
         {/* HEADER */}
+        {/* ================================= */}
+
         <div className="page-header">
           <h1>
             Descubre nuevas
@@ -162,9 +201,9 @@ export default function Opportunities() {
           </p>
         </div>
 
-        {/* ========================= */}
+        {/* ================================= */}
         {/* FILTROS */}
-        {/* ========================= */}
+        {/* ================================= */}
 
         <div
           style={{
@@ -246,7 +285,10 @@ export default function Opportunities() {
               </button>
             </div>
 
-            {/* Filtro manual */}
+            {/* ============================== */}
+            {/* FILTRO MANUAL */}
+            {/* ============================== */}
+
             {filterMode === "manual" && (
               <div
                 style={{
@@ -437,7 +479,10 @@ export default function Opportunities() {
               </div>
             )}
 
-            {/* Recomendación */}
+            {/* ============================== */}
+            {/* RECOMENDACIÓN */}
+            {/* ============================== */}
+
             {filterMode ===
               "recomendacion" && (
               <div
@@ -503,7 +548,7 @@ export default function Opportunities() {
               </div>
             )}
 
-            {/* Limpiar */}
+            {/* Limpiar filtros */}
             {(tipo !== "" ||
               rama !== "" ||
               modalidad !== "" ||
@@ -534,9 +579,9 @@ export default function Opportunities() {
           </div>
         </div>
 
-        {/* ========================= */}
+        {/* ================================= */}
         {/* RESULTADOS */}
-        {/* ========================= */}
+        {/* ================================= */}
 
         <div className="cards">
 
@@ -555,17 +600,27 @@ export default function Opportunities() {
 
             results.map((o, index) => {
 
-              // Comprobar si hay fecha de evento
+              /*
+                IMPORTANTE:
+
+                OpenSheet devuelve los datos usando
+                el nombre del encabezado del Excel.
+
+                Primero buscamos "Extra".
+
+                También buscamos algunas variantes
+                por si el encabezado tiene espacios.
+              */
+
+              const extra = o["Extra (opcional)"] || ""
+
               const eventDate =
-                o["Fechas eventos"]?.trim()
+                o["Fechas eventos"] ||
+                o["Fechas eventos "] ||
+                ""
 
-              // Comprobar si hay información extra
-              const extra =
-                o["Extra"]?.trim()
-
-              // Saber si esta tarjeta está abierta
               const isExpanded =
-                expandedCards[index] || false
+                expandedCards[index] === true
 
               return (
                 <div
@@ -573,7 +628,10 @@ export default function Opportunities() {
                   className="opportunity-card"
                 >
 
-                  {/* NOMBRE */}
+                  {/* ========================== */}
+                  {/* TÍTULO */}
+                  {/* ========================== */}
+
                   <h3>
                     {o[
                       "Nombre de la oportunidad"
@@ -600,9 +658,12 @@ export default function Opportunities() {
                     💻 {o["Modalidad"]}
                   </div>
 
-                  {/* DEADLINE */}
+                  {/* ========================== */}
+                  {/* FECHA LÍMITE */}
+                  {/* ========================== */}
+
                   <div className="deadline">
-                    ⏰ Deadline:{" "}
+                    ⏰ Cierre de inscripciones:{" "}
                     {
                       o[
                         "Fecha límite de inscripciones"
@@ -610,124 +671,126 @@ export default function Opportunities() {
                     }
                   </div>
 
+                  {/* ========================== */}
                   {/* FECHA DEL EVENTO */}
-                  {eventDate && (
-                    <div
-                      className="info"
-                      style={{
-                        marginTop: "8px",
-                        color: "#4f46e5",
-                        fontWeight: "600",
-                      }}
-                    >
-                      📅 Fecha del evento:{" "}
-                      {eventDate}
-                    </div>
-                  )}
+                  {/* ========================== */}
 
-                  {/* ================================= */}
-                  {/* BOTÓN EXPANDIR INFORMACIÓN EXTRA */}
-                  {/* ================================= */}
-
-                  {extra && (
-                    <div
-                      style={{
-                        marginTop: "16px",
-                        width: "100%",
-                      }}
-                    >
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          toggleExpand(index)
-                        }
+                  {eventDate &&
+                    eventDate.trim() !== "" && (
+                      <div
+                        className="info"
                         style={{
-                          width: "100%",
-                          padding:
-                            "11px 16px",
-                          borderRadius:
-                            "10px",
-                          border:
-                            "1px solid #c7d2fe",
-                          background:
-                            isExpanded
-                              ? "#eef2ff"
-                              : "#ffffff",
-                          color:
-                            "#4f46e5",
-                          fontSize:
-                            "14px",
-                          fontWeight:
-                            "600",
-                          cursor:
-                            "pointer",
-                          transition:
-                            "all 0.2s ease",
-                          display:
-                            "flex",
-                          alignItems:
-                            "center",
-                          justifyContent:
-                            "center",
-                          gap: "8px",
+                          marginTop: "8px",
+                          color: "#4f46e5",
+                          fontWeight: "600",
                         }}
                       >
-                        {isExpanded
-                          ? "− Ocultar información"
-                          : "+ Ver información"}
-                      </button>
+                        📅 Fecha del evento:{" "}
+                        {eventDate}
+                      </div>
+                    )}
 
-                      {/* ================================= */}
-                      {/* CONTENIDO EXTRA */}
-                      {/* ================================= */}
+                  {/* ========================== */}
+                  {/* INFORMACIÓN EXTRA */}
+                  {/* ========================== */}
 
-                      {isExpanded && (
-                        <div
+                  {extra &&
+                    extra.trim() !== "" && (
+                      <div
+                        style={{
+                          marginTop: "18px",
+                        }}
+                      >
+
+                        {/* BOTÓN */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            toggleExpand(
+                              index
+                            )
+                          }
                           style={{
-                            marginTop:
-                              "10px",
+                            width: "100%",
                             padding:
-                              "16px",
-                            background:
-                              "#f8fafc",
+                              "12px 16px",
                             border:
-                              "1px solid #e2e8f0",
+                              "2px solid #4f46e5",
                             borderRadius:
-                              "10px",
+                              "12px",
+                            background:
+                              isExpanded
+                                ? "#4f46e5"
+                                : "white",
                             color:
-                              "#374151",
+                              isExpanded
+                                ? "white"
+                                : "#4f46e5",
+                            fontWeight:
+                              "600",
                             fontSize:
                               "14px",
-                            lineHeight:
-                              "1.7",
-                            whiteSpace:
-                              "pre-line",
-                            animation:
-                              "fadeIn 0.2s ease",
+                            cursor:
+                              "pointer",
+                            transition:
+                              "all 0.2s ease",
                           }}
                         >
+                          {isExpanded
+                            ? "▲ Ocultar información"
+                            : "▼ Ver información extra"}
+                        </button>
+
+                        {/* CONTENIDO */}
+                        {isExpanded && (
                           <div
                             style={{
-                              fontWeight:
-                                "600",
+                              marginTop:
+                                "12px",
+                              padding:
+                                "18px",
+                              background:
+                                "#f3f4f6",
+                              borderRadius:
+                                "12px",
+                              border:
+                                "1px solid #d1d5db",
                               color:
-                                "#4f46e5",
-                              marginBottom:
-                                "8px",
+                                "#374151",
+                              fontSize:
+                                "14px",
+                              lineHeight:
+                                "1.7",
+                              whiteSpace:
+                                "pre-wrap",
+                              wordBreak:
+                                "break-word",
                             }}
                           >
-                            ℹ️ Información del
-                            evento
+                            <div
+                              style={{
+                                fontWeight:
+                                  "700",
+                                color:
+                                  "#4f46e5",
+                                marginBottom:
+                                  "8px",
+                              }}
+                            >
+                              ℹ️ Información
+                              adicional
+                            </div>
+
+                            {extra}
                           </div>
+                        )}
+                      </div>
+                    )}
 
-                          {extra}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
+                  {/* ========================== */}
                   {/* APLICAR */}
+                  {/* ========================== */}
+
                   <a
                     href={o["Link"]}
                     target="_blank"
