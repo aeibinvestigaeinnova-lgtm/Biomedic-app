@@ -12,17 +12,16 @@ export default function Opportunities() {
   const [filterMode, setFilterMode] = useState("manual")
   const [userInterest, setUserInterest] = useState("")
 
-  // Guardar qué tarjetas están expandidas
+  // Estado para controlar las tarjetas expandidas
   const [expandedCards, setExpandedCards] = useState({})
 
-  // Función para convertir fechas en formato DD/MM/YYYY a objeto Date
+  // Convertir DD/MM/YYYY a Date
   const parseDate = (dateStr) => {
     if (!dateStr) return null
 
     const parts = dateStr.split("/")
 
     if (parts.length === 3) {
-      // DD/MM/YYYY
       return new Date(
         parts[2],
         parts[1] - 1,
@@ -42,9 +41,8 @@ export default function Opportunities() {
         const today = new Date()
         today.setHours(0, 0, 0, 0)
 
-        // IMPORTANTE:
-        // La fecha límite de inscripción sigue siendo
-        // la que determina si la oportunidad se muestra.
+        // Se sigue utilizando la FECHA LÍMITE
+        // para decidir qué oportunidades mostrar
         const activeOpportunities = data.filter((item) => {
           const deadlineDate = parseDate(
             item["Fecha límite de inscripciones"]
@@ -72,7 +70,8 @@ export default function Opportunities() {
       (item) =>
         (tipo === "" ||
           item["Tipo de evento"] === tipo) &&
-        (rama === "" || item["Rama"] === rama) &&
+        (rama === "" ||
+          item["Rama"] === rama) &&
         (modalidad === "" ||
           item["Modalidad"] === modalidad)
     )
@@ -87,7 +86,8 @@ export default function Opportunities() {
       return
     }
 
-    const searchTerm = userInterest.toLowerCase()
+    const searchTerm =
+      userInterest.toLowerCase()
 
     const filtered = data.filter((item) => {
       const rama =
@@ -128,9 +128,10 @@ export default function Opportunities() {
     setModalidad("")
     setUserInterest("")
     setResults(data)
+    setExpandedCards({})
   }
 
-  // Expandir / cerrar información extra
+  // Abrir / cerrar información extra
   const toggleExpand = (index) => {
     setExpandedCards((prev) => ({
       ...prev,
@@ -144,6 +145,8 @@ export default function Opportunities() {
       <div className="blob2"></div>
 
       <div className="opportunities-container">
+
+        {/* HEADER */}
         <div className="page-header">
           <h1>
             Descubre nuevas
@@ -159,7 +162,10 @@ export default function Opportunities() {
           </p>
         </div>
 
-        {/* ===== FILTROS INTEGRADOS ===== */}
+        {/* ========================= */}
+        {/* FILTROS */}
+        {/* ========================= */}
+
         <div
           style={{
             display: "flex",
@@ -178,6 +184,7 @@ export default function Opportunities() {
                 "0 8px 20px rgba(0,0,0,0.05)",
             }}
           >
+
             {/* Selector de modo */}
             <div
               style={{
@@ -208,7 +215,6 @@ export default function Opportunities() {
                       : "#374151",
                   fontWeight: "500",
                   cursor: "pointer",
-                  transition: "all 0.2s",
                 }}
               >
                 🔍 Filtro manual
@@ -234,14 +240,13 @@ export default function Opportunities() {
                       : "#374151",
                   fontWeight: "500",
                   cursor: "pointer",
-                  transition: "all 0.2s",
                 }}
               >
                 ⭐ Recomendaciones personalizadas
               </button>
             </div>
 
-            {/* Filtro Manual */}
+            {/* Filtro manual */}
             {filterMode === "manual" && (
               <div
                 style={{
@@ -251,6 +256,8 @@ export default function Opportunities() {
                   alignItems: "flex-end",
                 }}
               >
+
+                {/* Tipo */}
                 <div
                   style={{
                     flex: "1",
@@ -285,24 +292,30 @@ export default function Opportunities() {
                     <option value="">
                       Todos
                     </option>
+
                     <option value="Pasantía">
                       Pasantía
                     </option>
+
                     <option value="Curso">
                       Curso
                     </option>
+
                     <option value="Charla">
                       Charla
                     </option>
+
                     <option value="Congreso">
                       Congreso
                     </option>
+
                     <option value="Beca">
                       Beca
                     </option>
                   </select>
                 </div>
 
+                {/* Rama */}
                 <div
                   style={{
                     flex: "1",
@@ -337,21 +350,26 @@ export default function Opportunities() {
                     <option value="">
                       Todas
                     </option>
+
                     <option value="Biomateriales y/o tejidos">
                       Biomateriales
                     </option>
+
                     <option value="Imágenes y señales">
                       Imágenes y señales
                     </option>
+
                     <option value="Instrumentación médica">
                       Instrumentación médica
                     </option>
+
                     <option value="Biomecánica">
                       Biomecánica
                     </option>
                   </select>
                 </div>
 
+                {/* Modalidad */}
                 <div
                   style={{
                     flex: "1",
@@ -386,12 +404,15 @@ export default function Opportunities() {
                     <option value="">
                       Todas
                     </option>
+
                     <option value="Presencial">
                       Presencial
                     </option>
+
                     <option value="Virtual">
                       Virtual
                     </option>
+
                     <option value="Híbrido">
                       Híbrido
                     </option>
@@ -416,8 +437,9 @@ export default function Opportunities() {
               </div>
             )}
 
-            {/* Filtro de Recomendación */}
-            {filterMode === "recomendacion" && (
+            {/* Recomendación */}
+            {filterMode ===
+              "recomendacion" && (
               <div
                 style={{
                   display: "flex",
@@ -440,9 +462,7 @@ export default function Opportunities() {
                       color: "#374151",
                     }}
                   >
-                    ¿Qué te interesa? (ej.
-                    biomateriales, imágenes, beca,
-                    etc.)
+                    ¿Qué te interesa?
                   </label>
 
                   <input
@@ -450,7 +470,9 @@ export default function Opportunities() {
                     placeholder="Escribe palabras clave..."
                     value={userInterest}
                     onChange={(e) =>
-                      setUserInterest(e.target.value)
+                      setUserInterest(
+                        e.target.value
+                      )
                     }
                     style={{
                       width: "100%",
@@ -481,7 +503,7 @@ export default function Opportunities() {
               </div>
             )}
 
-            {/* Botón reiniciar */}
+            {/* Limpiar */}
             {(tipo !== "" ||
               rama !== "" ||
               modalidad !== "" ||
@@ -512,8 +534,12 @@ export default function Opportunities() {
           </div>
         </div>
 
-        {/* ===== RESULTADOS ===== */}
+        {/* ========================= */}
+        {/* RESULTADOS */}
+        {/* ========================= */}
+
         <div className="cards">
+
           {results.length === 0 ? (
             <div
               style={{
@@ -522,134 +548,186 @@ export default function Opportunities() {
                 color: "#6b7280",
               }}
             >
-              No se encontraron oportunidades activas.
-              ¡Vuelve pronto para más!
+              No se encontraron oportunidades
+              activas. ¡Vuelve pronto para más!
             </div>
           ) : (
+
             results.map((o, index) => {
-              // Verificar si existe información extra
-              const hasExtra =
-                o["Extra"] &&
-                o["Extra"].trim() !== ""
 
-              // Verificar si existe fecha del evento
-              const hasEventDate =
-                o["Fechas eventos"] &&
-                o["Fechas eventos"].trim() !== ""
+              // Comprobar si hay fecha de evento
+              const eventDate =
+                o["Fechas eventos"]?.trim()
 
+              // Comprobar si hay información extra
+              const extra =
+                o["Extra"]?.trim()
+
+              // Saber si esta tarjeta está abierta
               const isExpanded =
-                expandedCards[index]
+                expandedCards[index] || false
 
               return (
                 <div
                   key={index}
                   className="opportunity-card"
                 >
-                  {/* Nombre */}
+
+                  {/* NOMBRE */}
                   <h3>
-                    {o["Nombre de la oportunidad"]}
+                    {o[
+                      "Nombre de la oportunidad"
+                    ]}
                   </h3>
 
-                  {/* Tipo */}
+                  {/* TIPO */}
                   <div className="tag">
                     {o["Tipo de evento"]}
                   </div>
 
-                  {/* Organización */}
+                  {/* ORGANIZACIÓN */}
                   <div className="organization">
                     {o["Organización"]}
                   </div>
 
-                  {/* País */}
+                  {/* PAÍS */}
                   <div className="info">
                     📍 {o["País"]}
                   </div>
 
-                  {/* Modalidad */}
+                  {/* MODALIDAD */}
                   <div className="info">
                     💻 {o["Modalidad"]}
                   </div>
 
-                  {/* Fecha límite de inscripción */}
+                  {/* DEADLINE */}
                   <div className="deadline">
                     ⏰ Deadline:{" "}
-                    {o[
-                      "Fecha límite de inscripciones"
-                    ]}
+                    {
+                      o[
+                        "Fecha límite de inscripciones"
+                      ]
+                    }
                   </div>
 
                   {/* FECHA DEL EVENTO */}
-                  {hasEventDate && (
+                  {eventDate && (
                     <div
                       className="info"
                       style={{
                         marginTop: "8px",
                         color: "#4f46e5",
-                        fontWeight: "500",
+                        fontWeight: "600",
                       }}
                     >
                       📅 Fecha del evento:{" "}
-                      {o["Fechas eventos"]}
+                      {eventDate}
                     </div>
                   )}
 
-                  {/* INFORMACIÓN EXTRA */}
-                  {hasExtra && (
+                  {/* ================================= */}
+                  {/* BOTÓN EXPANDIR INFORMACIÓN EXTRA */}
+                  {/* ================================= */}
+
+                  {extra && (
                     <div
                       style={{
                         marginTop: "16px",
+                        width: "100%",
                       }}
                     >
+
                       <button
+                        type="button"
                         onClick={() =>
                           toggleExpand(index)
                         }
                         style={{
                           width: "100%",
-                          padding: "10px 14px",
+                          padding:
+                            "11px 16px",
+                          borderRadius:
+                            "10px",
+                          border:
+                            "1px solid #c7d2fe",
                           background:
                             isExpanded
                               ? "#eef2ff"
-                              : "#f9fafb",
-                          color: "#4f46e5",
-                          border:
-                            "1px solid #e0e7ff",
-                          borderRadius: "10px",
-                          cursor: "pointer",
-                          fontWeight: "600",
-                          fontSize: "14px",
+                              : "#ffffff",
+                          color:
+                            "#4f46e5",
+                          fontSize:
+                            "14px",
+                          fontWeight:
+                            "600",
+                          cursor:
+                            "pointer",
                           transition:
-                            "all 0.2s",
+                            "all 0.2s ease",
+                          display:
+                            "flex",
+                          alignItems:
+                            "center",
+                          justifyContent:
+                            "center",
+                          gap: "8px",
                         }}
                       >
                         {isExpanded
-                          ? "▲ Ocultar información"
-                          : "▼ Ver más información"}
+                          ? "− Ocultar información"
+                          : "+ Ver información"}
                       </button>
+
+                      {/* ================================= */}
+                      {/* CONTENIDO EXTRA */}
+                      {/* ================================= */}
 
                       {isExpanded && (
                         <div
                           style={{
-                            marginTop: "10px",
-                            padding: "14px",
-                            background: "#f8fafc",
-                            borderRadius: "10px",
+                            marginTop:
+                              "10px",
+                            padding:
+                              "16px",
+                            background:
+                              "#f8fafc",
                             border:
-                              "1px solid #e5e7eb",
-                            color: "#4b5563",
-                            fontSize: "14px",
-                            lineHeight: "1.6",
+                              "1px solid #e2e8f0",
+                            borderRadius:
+                              "10px",
+                            color:
+                              "#374151",
+                            fontSize:
+                              "14px",
+                            lineHeight:
+                              "1.7",
                             whiteSpace:
                               "pre-line",
+                            animation:
+                              "fadeIn 0.2s ease",
                           }}
                         >
-                          {o["Extra"]}
+                          <div
+                            style={{
+                              fontWeight:
+                                "600",
+                              color:
+                                "#4f46e5",
+                              marginBottom:
+                                "8px",
+                            }}
+                          >
+                            ℹ️ Información del
+                            evento
+                          </div>
+
+                          {extra}
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Botón aplicar */}
+                  {/* APLICAR */}
                   <a
                     href={o["Link"]}
                     target="_blank"
@@ -664,6 +742,7 @@ export default function Opportunities() {
                       Aplicar
                     </button>
                   </a>
+
                 </div>
               )
             })
