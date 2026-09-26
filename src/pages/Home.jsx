@@ -46,22 +46,20 @@ export default function Home() {
       })
   }, [])
 
-  // 🔥 MISMO PARSER QUE EN Trabajo.js (robusto)
+  // Parser CSV
   const parseCSV = (csvText) => {
-    // Eliminar BOM si existe
     if (csvText.charCodeAt(0) === 0xfeff) {
       csvText = csvText.slice(1)
     }
 
-    // Normalizar saltos de línea
     csvText = csvText.replace(/\r\n/g, "\n").replace(/\r/g, "\n")
 
     const lines = csvText.split("\n")
     if (lines.length === 0) return []
 
-    // Detectar separador
     const firstLine = lines[0]
     let separator = ","
+
     if (firstLine.includes(";") && !firstLine.includes(",")) {
       separator = ";"
     } else if (firstLine.includes(";") && firstLine.includes(",")) {
@@ -70,13 +68,14 @@ export default function Home() {
       separator = countSemicolon > countComma ? ";" : ","
     }
 
-    // Función para dividir una línea respetando comillas
     const splitLine = (line) => {
       const values = []
       let current = ""
       let insideQuotes = false
+
       for (let i = 0; i < line.length; i++) {
         const char = line[i]
+
         if (char === '"') {
           insideQuotes = !insideQuotes
         } else if (char === separator && !insideQuotes) {
@@ -86,21 +85,27 @@ export default function Home() {
           current += char
         }
       }
+
       values.push(current.trim())
-      return values.map(v => v.replace(/^"|"$/g, "").trim())
+
+      return values.map((v) =>
+        v.replace(/^"|"$/g, "").trim()
+      )
     }
 
-    // Procesar encabezados
     const rawHeaders = splitLine(lines[0])
-    const headers = rawHeaders.map(h => h.replace(/\s+/g, " ").trim())
+    const headers = rawHeaders.map((h) =>
+      h.replace(/\s+/g, " ").trim()
+    )
 
     console.log("🔍 Encabezados detectados en Home:", headers)
 
-    // Parsear filas
     const result = []
     let i = 1
+
     while (i < lines.length) {
       const line = lines[i]
+
       if (line.trim() === "") {
         i++
         continue
@@ -109,7 +114,11 @@ export default function Home() {
       let fullLine = line
       let nextLine = lines[i + 1]
       let values = splitLine(fullLine)
-      while (values.length < headers.length && nextLine !== undefined) {
+
+      while (
+        values.length < headers.length &&
+        nextLine !== undefined
+      ) {
         fullLine += "\n" + nextLine
         values = splitLine(fullLine)
         i++
@@ -121,6 +130,7 @@ export default function Home() {
       }
 
       const row = {}
+
       headers.forEach((header, idx) => {
         row[header] = values[idx] || ""
       })
@@ -141,27 +151,43 @@ export default function Home() {
           Date.now()
 
         const response = await fetch(csvUrl)
-        if (!response.ok) throw new Error("Error al cargar los datos")
+
+        if (!response.ok) {
+          throw new Error("Error al cargar los datos")
+        }
 
         const csvText = await response.text()
-        console.log("📄 CSV recibido en Home (primeros 300 chars):", csvText.substring(0, 300))
+
+        console.log(
+          "📄 CSV recibido en Home (primeros 300 chars):",
+          csvText.substring(0, 300)
+        )
 
         const parsed = parseCSV(csvText)
-        console.log("📊 Datos parseados en Home (primeros 2):", parsed.slice(0, 2))
 
-        // Tomar las primeras 3 ofertas
+        console.log(
+          "📊 Datos parseados en Home (primeros 2):",
+          parsed.slice(0, 2)
+        )
+
         const top3 = parsed.slice(0, 3)
+
         setWorkOpportunities(top3)
         setLoadingWork(false)
       } catch (error) {
-        console.error("Error cargando ofertas de trabajo:", error)
+        console.error(
+          "Error cargando ofertas de trabajo:",
+          error
+        )
+
         setLoadingWork(false)
-        // Datos de ejemplo con links
+
         const ejemploData = [
           {
             "Nombre del trabajo": "Ingeniero Biomédico Senior",
             Empresa: "Medtronic",
-            Requisitos: "Ingeniería Biomédica, 5 años de experiencia",
+            Requisitos:
+              "Ingeniería Biomédica, 5 años de experiencia",
             Funciones: "Diseño de dispositivos médicos",
             "Tipo de Trabajo": "Tiempo completo",
             "Experiencia Requerida": "5+ años",
@@ -169,26 +195,34 @@ export default function Home() {
             Link: "https://www.medtronic.com/careers",
           },
           {
-            "Nombre del trabajo": "Practicante de Imágenes Médicas",
+            "Nombre del trabajo":
+              "Practicante de Imágenes Médicas",
             Empresa: "Siemens Healthineers",
-            Requisitos: "Estudiante de últimos ciclos",
-            Funciones: "Apoyo en procesamiento de imágenes",
+            Requisitos:
+              "Estudiante de últimos ciclos",
+            Funciones:
+              "Apoyo en procesamiento de imágenes",
             "Tipo de Trabajo": "Pasantía",
             "Experiencia Requerida": "Sin experiencia",
             Área: "Imágenes y señales",
-            Link: "https://www.siemens-healthineers.com/careers",
+            Link:
+              "https://www.siemens-healthineers.com/careers",
           },
           {
-            "Nombre del trabajo": "Especialista en Biomateriales",
+            "Nombre del trabajo":
+              "Especialista en Biomateriales",
             Empresa: "Johnson & Johnson",
-            Requisitos: "Maestría en Biomateriales",
-            Funciones: "Investigación y desarrollo",
+            Requisitos:
+              "Maestría en Biomateriales",
+            Funciones:
+              "Investigación y desarrollo",
             "Tipo de Trabajo": "Tiempo completo",
             "Experiencia Requerida": "2+ años",
             Área: "Biomateriales y/o tejidos",
             Link: "https://www.jnj.com/careers",
           },
         ]
+
         setWorkOpportunities(ejemploData)
       }
     }
@@ -196,21 +230,41 @@ export default function Home() {
     fetchWorkData()
   }, [])
 
-  // 🔥 FUNCIÓN PARA MANEJAR LA POSTULACIÓN
+  // Manejar la postulación
   const handleApply = (trabajo) => {
-    console.log("🔗 Postulando a:", trabajo["Nombre del trabajo"])
+    console.log(
+      "🔗 Postulando a:",
+      trabajo["Nombre del trabajo"]
+    )
+
     console.log("📦 Datos completos:", trabajo)
-    
-    // Buscar el link en diferentes posibles nombres de columna
-    const link = trabajo["Link"] || trabajo["link"] || trabajo["URL"] || trabajo["Url"] || trabajo["Enlace"]
-    
+
+    const link =
+      trabajo["Link"] ||
+      trabajo["link"] ||
+      trabajo["URL"] ||
+      trabajo["Url"] ||
+      trabajo["Enlace"]
+
     console.log("🔗 Link encontrado:", link)
-    
-    if (link && link.trim() !== "" && link.trim() !== "#") {
-      window.open(link.trim(), "_blank", "noopener,noreferrer")
+
+    if (
+      link &&
+      link.trim() !== "" &&
+      link.trim() !== "#"
+    ) {
+      window.open(
+        link.trim(),
+        "_blank",
+        "noopener,noreferrer"
+      )
     } else {
       alert(
-        `📧 Postular a: ${trabajo["Nombre del trabajo"] || "Sin título"}\n🏢 Empresa: ${trabajo["Empresa"] || "No especificada"}\n\nPronto recibirás instrucciones para continuar con el proceso.`
+        `📧 Postular a: ${
+          trabajo["Nombre del trabajo"] || "Sin título"
+        }\n🏢 Empresa: ${
+          trabajo["Empresa"] || "No especificada"
+        }\n\nPronto recibirás instrucciones para continuar con el proceso.`
       )
     }
   }
@@ -224,21 +278,27 @@ export default function Home() {
       <div className="hero">
         <h1>
           Descubre el futuro de la
-          <span className="highlight"> ingeniería biomédica</span>
+          <span className="highlight">
+            {" "}
+            ingeniería biomédica
+          </span>
         </h1>
+
         <p>
-          Encuentra congresos, becas, pasantías y cursos diseñados
-          para estudiantes de ingeniería biomédica en todo el mundo.
+          Encuentra congresos, becas, pasantías y cursos
+          diseñados para estudiantes de ingeniería biomédica
+          en todo el mundo.
         </p>
+
         <div className="buttons">
+          {/* BOTÓN 1 */}
           <Link to="/opportunities">
-            <button className="btn-primary">Explorar oportunidades</button>
-          </Link>
-          <Link to="/opportunities">
-            <button className="btn-secondary">
-              Encontrar oportunidades para mí
+            <button className="btn-primary">
+              Explorar oportunidades
             </button>
           </Link>
+
+          {/* BOTÓN 2 */}
           <Link to="/trabajo">
             <button
               className="btn-primary"
@@ -277,20 +337,23 @@ export default function Home() {
             >
               ⏰ ¡No te lo pierdas!
             </h2>
+
             <p
               style={{
                 color: "#6b7280",
                 fontSize: "1.1rem",
               }}
             >
-              Estas oportunidades están por vencer - ¡Aplica ahora!
+              Estas oportunidades están por vencer -
+              ¡Aplica ahora!
             </p>
           </div>
 
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(300px, 1fr))",
               gap: "24px",
             }}
           >
@@ -319,11 +382,27 @@ export default function Home() {
                 >
                   🔥 ¡Últimos días!
                 </div>
-                <h3>{opp["Nombre de la oportunidad"]}</h3>
-                <div className="tag">{opp["Tipo de evento"]}</div>
-                <div className="organization">{opp["Organización"]}</div>
-                <div className="info">📍 {opp["País"]}</div>
-                <div className="info">💻 {opp["Modalidad"]}</div>
+
+                <h3>
+                  {opp["Nombre de la oportunidad"]}
+                </h3>
+
+                <div className="tag">
+                  {opp["Tipo de evento"]}
+                </div>
+
+                <div className="organization">
+                  {opp["Organización"]}
+                </div>
+
+                <div className="info">
+                  📍 {opp["País"]}
+                </div>
+
+                <div className="info">
+                  💻 {opp["Modalidad"]}
+                </div>
+
                 <div
                   className="deadline"
                   style={{
@@ -331,16 +410,29 @@ export default function Home() {
                     fontWeight: "bold",
                   }}
                 >
-                  ⏰ Cierra: {opp["Fecha límite de inscripciones"]}
+                  ⏰ Cierra:{" "}
+                  {opp["Fecha límite de inscripciones"]}
                 </div>
-                <a href={opp["Link"]} target="_blank" rel="noopener noreferrer">
-                  <button className="apply-btn">Aplicar ahora</button>
+
+                <a
+                  href={opp["Link"]}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <button className="apply-btn">
+                    Aplicar ahora
+                  </button>
                 </a>
               </div>
             ))}
           </div>
 
-          <div style={{ textAlign: "center", marginTop: "32px" }}>
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: "32px",
+            }}
+          >
             <Link to="/opportunities">
               <button
                 style={{
@@ -384,35 +476,58 @@ export default function Home() {
           >
             💼 Ofertas de trabajo destacadas
           </h2>
+
           <p
             style={{
               color: "#6b7280",
               fontSize: "1.1rem",
             }}
           >
-            Encuentra las mejores oportunidades laborales en ingeniería biomédica
+            Encuentra las mejores oportunidades laborales
+            en ingeniería biomédica
           </p>
         </div>
 
         {loadingWork ? (
-          <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
+          <div
+            style={{
+              textAlign: "center",
+              padding: "40px",
+              color: "#6b7280",
+            }}
+          >
             Cargando ofertas de trabajo...
           </div>
         ) : workOpportunities.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
-            No hay ofertas de trabajo disponibles en este momento.
+          <div
+            style={{
+              textAlign: "center",
+              padding: "40px",
+              color: "#6b7280",
+            }}
+          >
+            No hay ofertas de trabajo disponibles en
+            este momento.
           </div>
         ) : (
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(300px, 1fr))",
               gap: "24px",
             }}
           >
             {workOpportunities.map((trabajo, index) => (
-              <div key={index} className="opportunity-card">
-                <h3>{trabajo["Nombre del trabajo"] || "Sin título"}</h3>
+              <div
+                key={index}
+                className="opportunity-card"
+              >
+                <h3>
+                  {trabajo["Nombre del trabajo"] ||
+                    "Sin título"}
+                </h3>
+
                 <div
                   className="tag"
                   style={{
@@ -420,17 +535,28 @@ export default function Home() {
                     color: "white",
                   }}
                 >
-                  {trabajo["Tipo de Trabajo"] || "No especificado"}
+                  {trabajo["Tipo de Trabajo"] ||
+                    "No especificado"}
                 </div>
+
                 <div className="organization">
-                  🏢 {trabajo["Empresa"] || "Empresa no especificada"}
+                  🏢{" "}
+                  {trabajo["Empresa"] ||
+                    "Empresa no especificada"}
                 </div>
+
                 <div className="info">
-                  📋 {trabajo["Área"] || "Área no especificada"}
+                  📋{" "}
+                  {trabajo["Área"] ||
+                    "Área no especificada"}
                 </div>
+
                 <div className="info">
-                  ⭐ {trabajo["Experiencia Requerida"] || "No especificada"}
+                  ⭐{" "}
+                  {trabajo["Experiencia Requerida"] ||
+                    "No especificada"}
                 </div>
+
                 {trabajo["Requisitos"] && (
                   <div
                     className="deadline"
@@ -439,16 +565,33 @@ export default function Home() {
                       marginTop: "12px",
                     }}
                   >
-                    📌 Requisitos: {trabajo["Requisitos"].substring(0, 80)}...
+                    📌 Requisitos:{" "}
+                    {trabajo["Requisitos"].substring(
+                      0,
+                      80
+                    )}
+                    ...
                   </div>
                 )}
+
                 {trabajo["Funciones"] && (
-                  <details style={{ marginTop: "12px", fontSize: "14px", color: "#4b5563" }}>
+                  <details
+                    style={{
+                      marginTop: "12px",
+                      fontSize: "14px",
+                      color: "#4b5563",
+                    }}
+                  >
                     <summary
-                      style={{ cursor: "pointer", fontWeight: "500", color: "#4f46e5" }}
+                      style={{
+                        cursor: "pointer",
+                        fontWeight: "500",
+                        color: "#4f46e5",
+                      }}
                     >
                       Ver funciones
                     </summary>
+
                     <p
                       style={{
                         marginTop: "8px",
@@ -461,13 +604,16 @@ export default function Home() {
                     </p>
                   </details>
                 )}
+
                 <button
                   className="apply-btn"
                   style={{
                     backgroundColor: "#10b981",
                     marginTop: "16px",
                   }}
-                  onClick={() => handleApply(trabajo)}
+                  onClick={() =>
+                    handleApply(trabajo)
+                  }
                 >
                   Postular ahora
                 </button>
@@ -477,7 +623,12 @@ export default function Home() {
         )}
 
         {/* Botón para ver todas las ofertas */}
-        <div style={{ textAlign: "center", marginTop: "32px" }}>
+        <div
+          style={{
+            textAlign: "center",
+            marginTop: "32px",
+          }}
+        >
           <Link to="/trabajo">
             <button
               style={{
@@ -489,11 +640,13 @@ export default function Home() {
                 fontSize: "1rem",
                 fontWeight: "600",
                 cursor: "pointer",
-                transition: "transform 0.2s, box-shadow 0.2s",
+                transition:
+                  "transform 0.2s, box-shadow 0.2s",
               }}
               onMouseEnter={(e) => {
                 e.target.style.transform = "scale(1.05)"
-                e.target.style.boxShadow = "0 4px 20px rgba(16, 185, 129, 0.4)"
+                e.target.style.boxShadow =
+                  "0 4px 20px rgba(16, 185, 129, 0.4)"
               }}
               onMouseLeave={(e) => {
                 e.target.style.transform = "scale(1)"
@@ -508,29 +661,42 @@ export default function Home() {
 
       {/* CARDS */}
       <div className="cards">
-        <Link to="/opportunities" style={{ textDecoration: "none" }}>
+        <Link
+          to="/opportunities"
+          style={{ textDecoration: "none" }}
+        >
           <div className="card">
             <h3>🔎 Explorar oportunidades</h3>
-            <p>Filtra congresos, becas y cursos según tu área biomédica.</p>
-          </div>
-        </Link>
-
-        <Link to="/talleres" style={{ textDecoration: "none" }}>
-          <div className="card">
-            <h3>📄 Talleres</h3>
             <p>
-              Descubre talleres, workshops y cursos para potenciar tus
-              habilidades en ingeniería biomédica.
+              Filtra congresos, becas y cursos según tu
+              área biomédica.
             </p>
           </div>
         </Link>
 
-        <Link to="/trabajo" style={{ textDecoration: "none" }}>
+        <Link
+          to="/talleres"
+          style={{ textDecoration: "none" }}
+        >
+          <div className="card">
+            <h3>📄 Talleres</h3>
+            <p>
+              Descubre talleres, workshops y cursos para
+              potenciar tus habilidades en ingeniería
+              biomédica.
+            </p>
+          </div>
+        </Link>
+
+        <Link
+          to="/trabajo"
+          style={{ textDecoration: "none" }}
+        >
           <div className="card">
             <h3>💼 Ofertas de trabajo</h3>
             <p>
-              Encuentra pasantías, prácticas y empleos en el campo de la
-              ingeniería biomédica.
+              Encuentra pasantías, prácticas y empleos en
+              el campo de la ingeniería biomédica.
             </p>
           </div>
         </Link>
@@ -550,7 +716,8 @@ export default function Home() {
             maxWidth: "1200px",
             margin: "0 auto",
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+            gridTemplateColumns:
+              "repeat(auto-fit, minmax(250px, 1fr))",
             gap: "40px",
             textAlign: "center",
           }}
@@ -560,7 +727,8 @@ export default function Home() {
               style={{
                 fontSize: "2rem",
                 marginBottom: "8px",
-                background: "linear-gradient(135deg, #a855f7, #ec4899)",
+                background:
+                  "linear-gradient(135deg, #a855f7, #ec4899)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 display: "inline-block",
@@ -568,13 +736,15 @@ export default function Home() {
             >
               AEIB
             </h2>
+
             <p
               style={{
                 color: "#9ca3af",
                 marginTop: "8px",
               }}
             >
-              Asociación de Estudiantes de Ingeniería Biomédica
+              Asociación de Estudiantes de Ingeniería
+              Biomédica
             </p>
           </div>
 
@@ -588,15 +758,18 @@ export default function Home() {
             >
               Subdirección de Investigación e Innovación
             </h3>
+
             <p
               style={{
                 color: "#9ca3af",
                 lineHeight: "1.6",
               }}
             >
-              Impulsando el futuro de la ingeniería biomédica
+              Impulsando el futuro de la ingeniería
+              biomédica
               <br />
-              a través de la investigación y la innovación tecnológica.
+              a través de la investigación y la innovación
+              tecnológica.
             </p>
           </div>
 
@@ -620,7 +793,10 @@ export default function Home() {
                 marginBottom: "12px",
               }}
             >
-              <span style={{ fontSize: "1.5rem" }}>📷</span>
+              <span style={{ fontSize: "1.5rem" }}>
+                📷
+              </span>
+
               <a
                 href="https://instagram.com/aeib.pe"
                 target="_blank"
@@ -630,8 +806,12 @@ export default function Home() {
                   textDecoration: "none",
                   transition: "color 0.2s",
                 }}
-                onMouseEnter={(e) => (e.target.style.color = "#e4405f")}
-                onMouseLeave={(e) => (e.target.style.color = "#9ca3af")}
+                onMouseEnter={(e) =>
+                  (e.target.style.color = "#e4405f")
+                }
+                onMouseLeave={(e) =>
+                  (e.target.style.color = "#9ca3af")
+                }
               >
                 @aeib.pe
               </a>
@@ -645,7 +825,10 @@ export default function Home() {
                 gap: "8px",
               }}
             >
-              <span style={{ fontSize: "1.5rem" }}>📞</span>
+              <span style={{ fontSize: "1.5rem" }}>
+                📞
+              </span>
+
               <a
                 href="tel:+51999999999"
                 style={{
@@ -653,8 +836,12 @@ export default function Home() {
                   textDecoration: "none",
                   transition: "color 0.2s",
                 }}
-                onMouseEnter={(e) => (e.target.style.color = "#10b981")}
-                onMouseLeave={(e) => (e.target.style.color = "#9ca3af")}
+                onMouseEnter={(e) =>
+                  (e.target.style.color = "#10b981")
+                }
+                onMouseLeave={(e) =>
+                  (e.target.style.color = "#9ca3af")
+                }
               >
                 +51 999 999 999
               </a>
@@ -671,6 +858,7 @@ export default function Home() {
             >
               Enlaces rápidos
             </h3>
+
             <Link
               to="/trabajo"
               style={{
@@ -680,11 +868,16 @@ export default function Home() {
                 marginBottom: "12px",
                 transition: "color 0.2s",
               }}
-              onMouseEnter={(e) => (e.target.style.color = "#10b981")}
-              onMouseLeave={(e) => (e.target.style.color = "#9ca3af")}
+              onMouseEnter={(e) =>
+                (e.target.style.color = "#10b981")
+              }
+              onMouseLeave={(e) =>
+                (e.target.style.color = "#9ca3af")
+              }
             >
               💼 Ofertas de trabajo
             </Link>
+
             <Link
               to="/opportunities"
               style={{
@@ -694,11 +887,16 @@ export default function Home() {
                 marginBottom: "12px",
                 transition: "color 0.2s",
               }}
-              onMouseEnter={(e) => (e.target.style.color = "#10b981")}
-              onMouseLeave={(e) => (e.target.style.color = "#9ca3af")}
+              onMouseEnter={(e) =>
+                (e.target.style.color = "#10b981")
+              }
+              onMouseLeave={(e) =>
+                (e.target.style.color = "#9ca3af")
+              }
             >
               📅 Próximos eventos
             </Link>
+
             <Link
               to="/talleres"
               style={{
@@ -707,8 +905,12 @@ export default function Home() {
                 display: "block",
                 transition: "color 0.2s",
               }}
-              onMouseEnter={(e) => (e.target.style.color = "#10b981")}
-              onMouseLeave={(e) => (e.target.style.color = "#9ca3af")}
+              onMouseEnter={(e) =>
+                (e.target.style.color = "#10b981")
+              }
+              onMouseLeave={(e) =>
+                (e.target.style.color = "#9ca3af")
+              }
             >
               📚 Talleres y cursos
             </Link>
@@ -727,8 +929,9 @@ export default function Home() {
           }}
         >
           <p>
-            © {new Date().getFullYear()} AEIB - Asociación de Estudiantes de
-            Ingeniería Biomédica
+            © {new Date().getFullYear()} AEIB -
+            Asociación de Estudiantes de Ingeniería
+            Biomédica
             <br />
             Subdirección de Investigación e Innovación
           </p>
